@@ -1,26 +1,76 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8f7ff;
+  --foreground: #14121f;
+  --card: #ffffff;
+  --card-foreground: #14121f;
+  --muted: #6b6578;
+  --accent: #6d4df3;
+  --accent-soft: #e8e4ff;
+  --border: #e4e0f2;
+  --radius: 0.875rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0c0a12;
+    --foreground: #f4f1ff;
+    --card: #151222;
+    --card-foreground: #f4f1ff;
+    --muted: #a49eb8;
+    --accent: #9d8bff;
+    --accent-soft: #221d38;
+    --border: #2a243d;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-border: var(--border);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+/** Instant-hide splash for repeat visits in the same tab (see splash script in locale layout). */
+html.splash-skip [data-openlearn-splash] {
+  pointer-events: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+@keyframes openlearn-splash-bar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(400%);
+  }
+}
+
+.text-gradient {
+  background: linear-gradient(120deg, #6d4df3 0%, #c04bdc 45%, #f06fa3 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  .text-gradient {
+    background: linear-gradient(120deg, #b8a9ff 0%, #e084ff 50%, #ff9fb8 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
 }

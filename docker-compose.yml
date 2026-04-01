@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: openlearn-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: openlearn
+      POSTGRES_PASSWORD: openlearn
+      POSTGRES_DB: openlearn
+    ports:
+      # Default 59123 avoids common Postgres/exposed ports (5432–5435, 55432, …).
+      # Override OPENLEARN_DB_PORT in .env if needed; match DATABASE_URL.
+      - "${OPENLEARN_DB_PORT:-59123}:5432"
+    volumes:
+      - openlearn_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openlearn -d openlearn"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  openlearn_pgdata:

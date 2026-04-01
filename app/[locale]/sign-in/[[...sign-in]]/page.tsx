@@ -1,0 +1,38 @@
+import { SignIn } from "@clerk/nextjs";
+import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
+import { routing } from "@/i18n/routing";
+
+type Props = { params: Promise<{ locale: string }> };
+
+export async function generateMetadata({ params }: Props) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "Auth" });
+  return { title: t("signIn") };
+}
+
+export default async function SignInPage({ params }: Props) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "Auth" });
+  const prefix = locale === routing.defaultLocale ? "" : `/${locale}`;
+  return (
+    <div className="flex min-h-screen flex-col bg-[var(--background)]">
+      <div className="flex justify-end p-4">
+        <Link
+          href="/"
+          className="text-sm text-[var(--muted)] hover:text-[var(--foreground)]"
+        >
+          ← TheOpenLearn
+        </Link>
+      </div>
+      <div className="flex flex-1 flex-col items-center justify-center px-4 pb-20">
+        <h1 className="mb-8 text-2xl font-semibold">{t("signIn")}</h1>
+        <SignIn
+          routing="path"
+          path={`${prefix}/sign-in`}
+          signUpUrl={`${prefix}/sign-up`}
+        />
+      </div>
+    </div>
+  );
+}

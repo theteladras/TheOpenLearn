@@ -1,0 +1,636 @@
+{
+  "Locale": {
+    "groupLabel": "Language",
+    "current": "Current language: {name}",
+    "switchTo": "Switch to {name}",
+    "enName": "English",
+    "deName": "German",
+    "frName": "French",
+    "esName": "Spanish",
+    "ruName": "Russian",
+    "srName": "Serbian",
+    "trName": "Turkish"
+  },
+  "Settings": {
+    "title": "Settings",
+    "intro": "Account preferences and how you appear in the product.",
+    "languageTitle": "App language",
+    "languageDescription": "Controls the interface language for the dashboard, roadmaps, and community areas.",
+    "languageHint": "Changes apply immediately and are remembered on this device.",
+    "communityTitle": "Feed & directory",
+    "communityDescription": "Choose whether you appear in the learner directory and public feed, and set an optional public bio. Your email is never shown."
+  },
+  "Legal": {
+    "backHome": "Back to home",
+    "notLegalAdvice": "This information is provided for transparency. It is not legal advice. For regulated offerings, have these documents reviewed by qualified counsel.",
+    "relatedPages": "Related pages",
+    "seeTerms": "Terms of Service",
+    "seePrivacy": "Privacy Policy",
+    "privacy": {
+      "metaTitle": "Privacy Policy — TheOpenLearn",
+      "metaDescription": "How TheOpenLearn collects, uses, stores, and shares information when you use our service.",
+      "title": "Privacy Policy",
+      "updated": "Last updated: March 31, 2026",
+      "intro": "TheOpenLearn helps you turn learning materials into structured roadmaps. This policy describes how we handle personal information in connection with the website, application, and related features (the Service). By using the Service, you acknowledge this policy.",
+      "sections": [
+        {
+          "title": "Information we collect",
+          "body": "Account and identity: If you sign in, authentication is provided by our identity provider (for example Clerk), which may process your email, name, profile image, and security-related data according to their own policies.\n\nLearning content: You may submit URLs, text, files, or notes so we can generate learning plans, tasks, and related content. That material is processed to operate the Service.\n\nUsage and diagnostics: We may collect technical and usage data such as device type, browser, approximate region, feature usage, and error logs to keep the Service reliable and secure.\n\nCommunity features: If you opt in to community or visibility features, we may store preferences and aggregate or profile information you choose to display."
+        },
+        {
+          "title": "How we use information",
+          "body": "We use information to provide, maintain, and improve the Service (including AI-assisted generation), personalize your experience, communicate with you about the product, enforce our terms, comply with law, and protect users and the platform.\n\nWe do not sell your personal information."
+        },
+        {
+          "title": "AI processing and providers",
+          "body": "To generate roadmaps and learning assistance, content you submit may be sent to third-party AI and infrastructure providers. Those transfers are limited to what is needed to fulfill your request and operate the Service. Providers are expected to process data under their agreements and applicable law. Do not submit highly sensitive personal data (such as medical records or government identifiers) unless you accept the associated risk."
+        },
+        {
+          "title": "Cookies and similar technologies",
+          "body": "We and our vendors may use cookies, local storage, and similar technologies for session management, preferences, security, and analytics. You can adjust browser settings to limit some technologies; parts of the Service may not work correctly if you do."
+        },
+        {
+          "title": "Retention, security, and your choices",
+          "body": "We retain information as long as needed to provide the Service, comply with legal obligations, resolve disputes, and enforce agreements. We apply reasonable administrative, technical, and organizational measures to protect data; no method of transmission over the Internet is completely secure.\n\nDepending on your location, you may have rights to access, correct, delete, or export certain personal data, or to object to or restrict certain processing. You can often exercise choices through your account or by contacting us. You may also have the right to lodge a complaint with a supervisory authority."
+        },
+        {
+          "title": "International transfers and changes",
+          "body": "We may process information in countries other than where you live. Where required, we use appropriate safeguards. We may update this policy from time to time; the updated date will appear at the top. Continued use after changes means you accept the revised policy to the extent permitted by law."
+        }
+      ]
+    },
+    "terms": {
+      "metaTitle": "Terms of Service — TheOpenLearn",
+      "metaDescription": "Rules and conditions for using TheOpenLearn.",
+      "title": "Terms of Service",
+      "updated": "Last updated: March 31, 2026",
+      "intro": "These Terms govern access to and use of TheOpenLearn. By creating an account, accessing the site, or using our features, you agree to these Terms. If you do not agree, do not use the Service.",
+      "sections": [
+        {
+          "title": "The Service",
+          "body": "TheOpenLearn offers tools to organize learning, including AI-generated roadmaps, tasks, progress tracking, gamification, and optional community comparisons. The Service is intended for personal learning and productivity. It is not a school, university, employer, or professional advisor. Output may be incorrect or incomplete; you are responsible for how you use it."
+        },
+        {
+          "title": "Accounts and eligibility",
+          "body": "You must provide accurate information and keep your credentials confidential. You are responsible for activity under your account. You must be old enough to enter a binding agreement in your jurisdiction (and at least the age required by your local laws for data processing where applicable). Third-party login services apply their own terms."
+        },
+        {
+          "title": "Your content",
+          "body": "You retain rights to content you submit. You grant TheOpenLearn and its subprocessors a non-exclusive license to host, process, reproduce, adapt, and display that content only as needed to operate, improve, and promote the Service (for example generating tasks, showing your dashboard, and securing the platform). You represent that you have the rights to submit the material and that it does not violate law or third-party rights.\n\nWe may remove content or suspend access where we reasonably believe there is abuse, risk, or a legal obligation."
+        },
+        {
+          "title": "Acceptable use",
+          "body": "You will not misuse the Service: no illegal activity, harassment, malware, attempts to break security, scraping or automation that harms performance, redistribution of the Service or its outputs to compete with us, or use that infringes intellectual property. We may investigate and take action including termination."
+        },
+        {
+          "title": "Disclaimers and limitation of liability",
+          "body": "THE SERVICE IS PROVIDED \"AS IS\" AND \"AS AVAILABLE.\" TO THE MAXIMUM EXTENT PERMITTED BY LAW, WE DISCLAIM IMPLIED WARRANTIES INCLUDING MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. WE DO NOT WARRANT THAT THE SERVICE OR AI OUTPUT WILL BE ACCURATE, ERROR-FREE, OR UNINTERRUPTED.\n\nTO THE MAXIMUM EXTENT PERMITTED BY LAW, THEOPENLEARN AND ITS DEVELOPERS WILL NOT BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS, DATA, OR GOODWILL. OUR AGGREGATE LIABILITY FOR CLAIMS RELATING TO THE SERVICE WILL NOT EXCEED THE GREATER OF AMOUNTS YOU PAID US IN THE TWELVE MONTHS BEFORE THE CLAIM OR FIFTY EUROS (€50), UNLESS APPLICABLE LAW REQUIRES OTHERWISE."
+        },
+        {
+          "title": "Changes, governing law, and contact",
+          "body": "We may modify these Terms or the Service. We will post updates here where practicable; continued use can constitute acceptance. If you do not agree, stop using the Service. Unless otherwise required by law, disputes will be interpreted under the laws of the jurisdiction where the Service operator is established, without regard to conflict-of-law rules.\n\nYou can reach us through the contact options published with the Service. For account deletion or data questions, use in-product controls where available."
+        }
+      ]
+    }
+  },
+  "Meta": {
+    "title": "TheOpenLearn — AI learning journeys",
+    "description": "Turn links, PDFs, or notes into a gamified roadmap with phases, XP, learning coins, referrals, and visible progress as you complete tasks and topics."
+  },
+  "Landing": {
+    "nav": {
+      "features": "Features",
+      "how": "How it works",
+      "howShort": "How",
+      "gamification": "Progress",
+      "languages": "Languages",
+      "rewards": "Rewards",
+      "community": "Feed",
+      "communityShort": "Feed",
+      "signIn": "Sign in",
+      "getStarted": "Get started",
+      "menu": "Menu",
+      "menuTitle": "Site menu",
+      "languageHint": "Site language"
+    },
+    "hero": {
+      "kicker": "From your material to a journey",
+      "scrollCue": "Scroll",
+      "title": "Learn anything with a roadmap that feels like a game — not a spreadsheet.",
+      "subtitle": "Drop in a link, PDF, or notes. We interpret your goal, confirm the plan with you, then unlock phased tasks, checkpoints, and achievements.",
+      "coinTeaser": "On the free plan you get starter coins for new journeys, earn the most when you complete an entire roadmap (plus topic milestones), get a monthly top-up, and share referral codes.",
+      "cta": "Start learning free",
+      "secondary": "See how it works"
+    },
+    "how": {
+      "title": "How it works",
+      "step1Title": "Bring your material",
+      "step1Body": "Paste a URL, upload a PDF (structure ready), or write raw text — plus a short note on what “done” means for you.",
+      "step2Title": "Confirm understanding",
+      "step2Body": "We summarize subject, scope, difficulty, language, and depth. You edit and approve before anything is generated.",
+      "step3Title": "Play the journey",
+      "step3Body": "Phases unlock in order. Each task has resources, checkpoints, XP, and achievements. On the free tier you also earn coins as you complete topics and the full roadmap."
+    },
+    "features": {
+      "title": "Built for modern learners",
+      "cards": {
+        "structured": {
+          "title": "Structured by design",
+          "body": "Phases, tasks, references, and checkpoints keep big topics approachable."
+        },
+        "ai": {
+          "title": "Thoughtful AI",
+          "body": "No surprise wall of tasks — we align on intent first, then generate."
+        },
+        "progress": {
+          "title": "Visible momentum",
+          "body": "Progress, streaks, and a clear coin balance for free accounts — you always see what you have finished and what is next."
+        }
+      }
+    },
+    "rewards": {
+      "title": "Learning coins & rewards",
+      "subtitle": "A light game loop keeps motivation honest: spend a little to start a journey, earn it back with quality completions, bonuses for going the extra mile, and monthly + referral top-ups.",
+      "cards": {
+        "starter": {
+          "title": "Starter balance",
+          "body": "Free accounts start with 50 coins — enough to spin up several roadmaps and feel the loop before you need to earn more."
+        },
+        "spend": {
+          "title": "Start a journey",
+          "body": "Each new roadmap costs 10 coins on the free plan — it keeps generation deliberate and matches real focus time."
+        },
+        "earn": {
+          "title": "Earn by finishing",
+          "body": "Finishing every task in a topic pays 10 coins. Completing the entire roadmap pays 25 coins on the free plan (including a one-time completion bonus). Substantial reflection notes when you finish a task can add 5 more."
+        },
+        "monthly": {
+          "title": "Monthly grant",
+          "body": "Every calendar month, free learners get +30 coins automatically — a fresh allowance without streak pressure."
+        },
+        "referrals": {
+          "title": "Invite friends",
+          "body": "Share your code from the dashboard. When someone applies it, you get +30 coins — they still get the full product experience."
+        },
+        "moments": {
+          "title": "Milestones that feel real",
+          "body": "Completing a task, a topic, or the whole roadmap gives you a clear read on what you unlocked and what comes next — not a vague “done” with no context."
+        }
+      }
+    },
+    "gamification": {
+      "title": "Motivation without the noise",
+      "body": "Earn XP, collect badges like First Step and Roadmap Finisher, and stack coins when you close phases on the free plan — steady motivation without gimmicks.",
+      "chip1": "XP & levels",
+      "chip2": "Achievements",
+      "chip3": "Milestones",
+      "chip4": "Coins (free)",
+      "panel": "XP reflects depth, badges reflect habits. Every major step — a task, a topic, or the full journey — comes with explicit recognition and a clear next move. On the free plan, coin grants keep the loop rewarding."
+    },
+    "i18n": {
+      "title": "Speak your language",
+      "body": "TheOpenLearn ships in English, German, French, Spanish, Russian, Serbian, and Turkish — with more locales easy to add. Your UI and roadmap language setting stays with you."
+    },
+    "cta": {
+      "title": "Ready for a calmer way to learn?",
+      "body": "Create an account, claim your starter coins, and generate your first journey in minutes.",
+      "button": "Create account"
+    },
+    "footer": {
+      "tagline": "Gamified AI learning planner",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "developedBy": "Developed by Sanel Hadzini"
+    }
+  },
+  "Auth": {
+    "signIn": "Sign in",
+    "signUp": "Create account"
+  },
+  "Community": {
+    "metaTitle": "Feed",
+    "headline": "Your learning feed",
+    "intro": "Public lesson completions and badges from learners who opted in. Use Rankings to compare stats.",
+    "feedPostingHint": "There is no separate “new post” box: complete a lesson (you can add a short public takeaway on that lesson’s page), or scroll down and use Comments on any card.",
+    "tabFeed": "Live feed",
+    "tabRank": "Rankings",
+    "feedKicker": "Feed",
+    "feedScopeLabel": "Who",
+    "feedFilterEveryone": "Everyone",
+    "feedFilterFollowing": "Following",
+    "feedTypeLabel": "Show",
+    "feedTypeAll": "All activity",
+    "feedTypeLessons": "Lessons only",
+    "feedTypeBadges": "Badges only",
+    "feedEmptyFollowing": "No activity from people you follow yet.",
+    "feedEmptyFollowingHint": "Open public profiles and follow learners you care about — their completions will land here.",
+    "feedSignInFollowingTitle": "Sign in to filter by people you follow",
+    "feedSignInCta": "Sign in to join the feed",
+    "feedOpenOwnLesson": "Open this lesson",
+    "feedJourneyLabel": "Journey",
+    "feedCommentsHeading": "Comments",
+    "feedCommentPlaceholder": "Cheer someone on, ask a question, or share how you tackled a similar lesson…",
+    "feedCommentSubmit": "Post",
+    "feedCommentPosting": "Posting…",
+    "feedCommentEmpty": "No comments yet — start the thread.",
+    "feedSignInToComment": "Sign in to comment",
+    "feedAttachLessons": "Attach my lessons",
+    "feedRefPickerTitle": "Reference your lessons",
+    "feedRefPickerHint": "Choose up to four of your lessons to show under your comment. Only you get open links; everyone else sees the titles.",
+    "feedRefPickerDone": "Done",
+    "feedYourLessonChip": "My lesson",
+    "feedReferencedLesson": "Related lesson",
+    "feedSharedTakeaway": "Shared takeaway",
+    "difficultyNote": "Challenge is approximated as average XP per completed lesson (generation assigns different XP weights). It is not a perfect difficulty score, but it rewards heavier paths.",
+    "activityTitle": "Recent activity",
+    "activityHint": "Latest completions and badges from learners with a public profile.",
+    "activityEmpty": "No public activity yet. Complete a lesson or enable your profile to show up here.",
+    "activityVerbLesson": "completed a lesson",
+    "activityVerbBadge": "earned a badge",
+    "filtersTitle": "Find learners",
+    "filtersHint": "Filter by topic cluster and sort by lessons, rigor, XP, streak, finished roadmaps, and more.",
+    "filterSort": "Rank by",
+    "filterTopic": "Topic focus",
+    "clusterAll": "All topics",
+    "sort_lessons": "Lessons done",
+    "sort_rigor": "Challenge / lesson",
+    "sort_xp": "Total XP",
+    "sort_breadth": "Topic breadth",
+    "sort_streak": "Streak",
+    "sort_roadmaps": "Roadmaps finished",
+    "radarPreviewTitle": "Skill shape (sample)",
+    "radarPreviewBody": "Five axes vs everyone in this list. Open a profile for the full chart.",
+    "emptyCohort": "No public profiles match these filters yet — be the first to opt in.",
+    "tableTitle": "Public learners",
+    "tableCount": "{count, plural, one {# learner} other {# learners}}",
+    "emptyTable": "Nobody has opted in yet. Enable your profile in settings to appear here.",
+    "colLearner": "Learner",
+    "colLessons": "Lessons",
+    "colRigor": "Avg XP / lesson",
+    "colXp": "XP",
+    "colBreadth": "Topics",
+    "colStreak": "Streak",
+    "colRoadmaps": "Done maps",
+    "anon": "Learner",
+    "you": "You",
+    "profile": "Profile",
+    "optInCta": "Make my profile public",
+    "axisVolume": "Volume",
+    "axisVolumeHint": "How many lessons you have completed.",
+    "axisRigor": "Rigor",
+    "axisRigorHint": "Average XP weight per lesson — proxy for tougher paths.",
+    "axisBreadth": "Range",
+    "axisBreadthHint": "How many distinct topic areas you study.",
+    "axisDrive": "Drive",
+    "axisDriveHint": "Streak and badges — consistency signal.",
+    "axisMastery": "Mastery",
+    "axisMasteryHint": "Finished roadmaps, badges, and XP depth.",
+    "privateProfileMeta": "Profile · TheOpenLearn",
+    "profileMetaFallback": "TheOpenLearn public profile",
+    "backToCommunity": "Back to feed",
+    "publicLearner": "Public profile",
+    "memberSince": "Member since {date}",
+    "statLessons": "Lessons completed",
+    "statRigor": "Avg XP / lesson",
+    "statRigorHint": "Higher means your completed lessons tend to carry heavier XP weights.",
+    "statXp": "Total XP",
+    "statBreadth": "Topic clusters",
+    "statStreak": "Day streak",
+    "statRoadmaps": "Roadmaps 100% done",
+    "statBadges": "Achievements",
+    "radarCardTitle": "Learning shape",
+    "radarCardBody": "This pentagon summarizes how you look versus other public learners on each dimension. Hover axis labels for detail.",
+    "backToAllSettings": "All settings",
+    "settingsTitle": "Community visibility",
+    "settingsIntro": "Control whether you appear in the community directory and activity feed.",
+    "visibilityCardTitle": "Public profile",
+    "visibilityCardBody": "Turn this on only if you are comfortable sharing aggregate stats and your display name from your account.",
+    "formPublicLabel": "Public learner profile",
+    "formPublicHelp": "Show display name, optional bio, stats, and skill chart on the feed and rankings. Email is never shown.",
+    "formBioLabel": "Public bio (optional)",
+    "formBioPlaceholder": "What you like learning or building…",
+    "formSave": "Save",
+    "formSaving": "Saving…",
+    "toastSaved": "Saved",
+    "toastError": "Could not save",
+    "statFollowers": "Followers",
+    "statFollowing": "Following",
+    "follow": "Follow",
+    "followingButton": "Following",
+    "signInToFollow": "Sign in to follow",
+    "followsYou": "Follows you",
+    "followersListTitle": "Followers — {name}",
+    "followersListSubtitle": "{count, plural, one {# follower} other {# followers}}",
+    "followingListTitle": "Following — {name}",
+    "followingListSubtitle": "{count, plural, one {# account} other {# accounts}}",
+    "backToProfile": "Back to {name}",
+    "emptyFollowers": "No followers yet.",
+    "emptyFollowing": "Not following anyone yet.",
+    "privateProfileBadge": "Private profile"
+  },
+  "Dashboard": {
+    "title": "Your dashboard",
+    "welcome": "Welcome back, {name}",
+    "subtitle": "Run several learnings in parallel — each journey has its own progress, with analytics below.",
+    "newRoadmap": "New learning plan",
+    "journeys": "Your learnings",
+    "progress": "Overall progress",
+    "overallProgress": "Overall task progress",
+    "overallAcrossJourneys": "{count, plural, one {Across # active learning} other {Across # active learnings}}",
+    "parallelLearnings": "Active learnings",
+    "journeyStatusLine": "{active} in progress or not started · {done} completed",
+    "phasesProgress": "{done} / {total} phases fully completed",
+    "phasesCardTitle": "Phases completed",
+    "tasksThisWeek": "This week",
+    "tasksThisWeekSub": "{count, plural, one {# task completed in the last 7 days} other {# tasks completed in the last 7 days}}",
+    "analyticsTitle": "Analytics",
+    "analyticsSummaryLine": "{overall}% overall · {learnings} active learnings · {done}/{total} tasks",
+    "tasksDone": "Tasks completed",
+    "xp": "Total XP",
+    "xpAndStreak": "XP · streak",
+    "streakDays": "{count, plural, one {# day streak} other {# day streak}}",
+    "achievements": "Achievements",
+    "walletTeaserCta": "Coins & referrals",
+    "walletPageTitle": "Coins & referrals",
+    "walletPageIntro": "Your learning coin balance, how earning works on the free plan, and invites.",
+    "walletBack": "Back to dashboard",
+    "openWalletAria": "Open coins and referrals",
+    "walletBalance": "Current balance",
+    "walletHowTitle": "How you earn coins",
+    "walletBullet1": "Starting a new journey on the free plan spends coins; you begin with a starter balance.",
+    "walletBullet2": "Completing a topic earns 10 coins; completing the whole roadmap earns 25 coins (free plan). Reflective notes (about 150+ characters) when you finish a task can add 5.",
+    "walletBullet3": "Free accounts receive a monthly coin top-up.",
+    "walletBullet4": "Invite friends with your code for bonuses when they join; you can apply one friend’s code yourself.",
+    "walletProTitle": "Pro account",
+    "walletProBody": "Your plan skips coin costs for new journeys. You can still share your referral code below—when someone applies it, your account gets the referrer bonus.",
+    "emptyJourneys": "No roadmaps yet — your first journey starts with one click.",
+    "view": "Open",
+    "continue": "Continue",
+    "latestJourney": "Latest · pick up here",
+    "allJourneys": "All journeys",
+    "tasksLabel": "{count, plural, one {# task} other {# tasks}}",
+    "navMenu": "Menu",
+    "navMenuTitle": "App navigation"
+  },
+  "TopicClusters": {
+    "general": "General learning",
+    "mathematics": "Mathematics & logic",
+    "life-sciences": "Life sciences",
+    "physical-sciences": "Physical sciences",
+    "computing": "Programming & software",
+    "technology": "Technology & systems",
+    "design": "Design & product",
+    "languages": "Languages & communication",
+    "business": "Business & careers",
+    "arts-humanities": "Arts & humanities",
+    "health-wellbeing": "Health & wellbeing"
+  },
+  "AchievementsPage": {
+    "title": "Achievements",
+    "subtitle": "Earn XP and badges as you move through tasks and phases. Illustrated cards are coming — emoji placeholders are temporary.",
+    "backDashboard": "Back to dashboard",
+    "collectionProgress": "Collection",
+    "unlocked": "unlocked",
+    "stateUnlocked": "Earned",
+    "stateLocked": "Locked",
+    "earnedOn": "Earned {date}",
+    "artworkPlaceholder": "Badge artwork",
+    "artworkHint": "Custom artwork can go here later — the emoji is a placeholder."
+  },
+  "Learn": {
+    "title": "Create learning plan",
+    "subtitle": "Tell us what you want to learn and where the material lives. We'll summarize understanding before building your roadmap.",
+    "subtitleNoTitle": "Share a link, paste text, or upload a file. We detect topics and suggest titles — you can split one source into several journeys when it mixes unrelated subjects.",
+    "sourceMode": "How are you adding material?",
+    "sourceModeLink": "Link",
+    "sourceModeText": "Text",
+    "sourceModeFile": "File",
+    "linkUrl": "Source URL",
+    "linkNotes": "Notes or excerpts (optional)",
+    "linkNotesHint": "Add key quotes or chapter names so the analysis matches what you care about.",
+    "textBody": "Paste your material",
+    "textBodyHint": "Chapters, notes, transcripts, or anything you want turned into a roadmap.",
+    "fileUpload": "File",
+    "fileTypesHint": "PDF (add excerpts below), or .txt / .md (full file is read).",
+    "fileExtraNotes": "Extra text for this file",
+    "fileExtraPlaceholder": "For PDFs: paste important sections here. For .txt / .md you can leave this empty or add context.",
+    "proposalsTitle": "Review proposed journeys",
+    "proposalsDescription": "We inferred these from your source. Uncheck any you do not want, edit titles and details, then generate.",
+    "scopeTitle": "Align your scope",
+    "scopeDescription": "This source looks like a large topic (for example full official docs). Answer the questions so we match depth and focus to what you actually want. You can go multiple rounds until the model stops asking.",
+    "scopeQuestionsLabel": "Questions",
+    "scopeYourAnswers": "Your answers",
+    "scopeAnswersPlaceholder": "Be specific: goals, timeline, stack, topics to include or skip, and how deep you want to go.",
+    "scopeSubmit": "Submit answers",
+    "scopeSkip": "Skip — use best guess",
+    "scopeAligned": "Scope updated. Review the journey details below, then generate.",
+    "scopeAnswersRequired": "Add your answers before submitting, or use Skip.",
+    "scopeFinishFirstHint": "Answer or skip the scope questions first.",
+    "sourceScaleLabel": "Source size",
+    "sourceScale": {
+      "narrow": "Focused",
+      "moderate": "Moderate",
+      "broad": "Broad",
+      "encyclopedic": "Large docs / umbrella topic"
+    },
+    "journeyInclude": "Create this journey",
+    "journeyTitle": "Journey title",
+    "journeyFocus": "Focus in your source",
+    "generateRoadmaps": "Generate roadmap(s)",
+    "selectAtLeastOne": "Select at least one journey to create.",
+    "success": "Roadmap(s) ready",
+    "errors": {
+      "linkRequired": "Enter a valid URL.",
+      "linkInvalid": "That URL does not look valid.",
+      "contentRequired": "Paste some material to analyze.",
+      "fileOrTextRequired": "Upload a file or paste text.",
+      "pdfNeedsExcerpt": "For PDFs, paste key excerpts in the text area (full extraction comes later).",
+      "fileRead": "Could not read that file.",
+      "unsupportedFile": "Use a .pdf, .txt, or .md file.",
+      "invalidJourney": "Something is invalid in the journey details — check the fields.",
+      "insufficientCoins": "You need 10 coins to start a new journey. Complete tasks, finish topics, invite friends, or wait for your monthly grant."
+    },
+    "fields": {
+      "topic": "Topic / title",
+      "sourceType": "Source type",
+      "sourceLink": "Link",
+      "sourcePdf": "PDF",
+      "sourceText": "Plain text",
+      "content": "Source content",
+      "contentLinkHint": "Paste a canonical article or docs URL. For MVP, add key excerpts below if you like.",
+      "contentPdfHint": "Upload is captured in the flow; full text extraction can be plugged in later — add a short description and paste key pages as text for now.",
+      "contentTextHint": "Paste chapters, notes, or transcripts.",
+      "language": "Roadmap & UI language",
+      "level": "Experience level",
+      "goal": "Optional goal",
+      "goalHint": "Why are you learning this? What would make you say “I nailed it”?"
+    },
+    "levels": {
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced"
+    },
+    "analyze": "Analyze with AI",
+    "analyzing": "Analyzing…",
+    "back": "Back"
+  },
+  "Understanding": {
+    "title": "Confirm understanding",
+    "description": "Edit anything that looks off. When you're happy, we'll generate your roadmap.",
+    "subject": "Subject",
+    "goal": "Target outcome",
+    "difficulty": "Difficulty",
+    "scope": "Suggested scope",
+    "language": "Language",
+    "readingLevel": "Reading / experience",
+    "depth": "Roadmap depth",
+    "depthShallow": "Shallow",
+    "depthStandard": "Standard",
+    "depthDeep": "Deep",
+    "confirm": "Generate roadmap",
+    "cancel": "Cancel",
+    "intentRef": "Intent (reference)"
+  },
+  "Duplicate": {
+    "title": "Looks familiar",
+    "body": "This is very similar to something you already started. Continue the existing roadmap or create a fresh one anyway.",
+    "continue": "Continue existing",
+    "createNew": "Create new anyway"
+  },
+  "Roadmap": {
+    "goal": "Learning goal",
+    "duration": "Estimated duration",
+    "phase": "Phase",
+    "tasks": "Tasks",
+    "locked": "Locked",
+    "available": "Ready",
+    "done": "Completed",
+    "resources": "Resources",
+    "howToPass": "How you pass this",
+    "evaluation": "Self-check",
+    "openTask": "Open task",
+    "progress": "Journey progress",
+    "phaseComplete": "Phase complete — nice work.",
+    "overviewTitle": "Roadmap at a glance",
+    "overviewHint": "Jump to a phase in the full view below.",
+    "overviewTasksLine": "{done} of {total} tasks",
+    "continuationTitle": "What to learn next",
+    "continuationIntro": "You completed every task in this journey. Here are AI-suggested follow-ups—each row names which part of this roadmap it extends.",
+    "continuationIntroCached": "Saved suggestions for this journey (same list as last time). Status updates when you work on a follow-up path.",
+    "continuationLoading": "Preparing suggestions…",
+    "continuationLoadingHint": "This can take a few seconds while we ask the AI for tailored next steps.",
+    "continuationError": "Could not load suggestions.",
+    "continuationErrorHint": "If this keeps happening, run `npx prisma generate` and `npx prisma db push`, then restart the dev server.",
+    "continuationRetry": "Try again",
+    "continuationColNext": "Next focus",
+    "continuationColBuildsOn": "Builds on",
+    "continuationColWhy": "Why this next",
+    "continuationColDepth": "Depth",
+    "continuationColAction": "Action",
+    "continuationColStatus": "Follow-up status",
+    "continuationStart": "Start this path",
+    "continuationStarting": "Creating…",
+    "continuationFootnote": "Suggestions are stored on this journey so they stay the same when you come back. Starting a path creates a linked follow-up; status and lesson counts update as you work there (or when you return to this tab).",
+    "continuationStarted": "Your next journey is ready.",
+    "continuationReused": "Opening your existing follow-up journey.",
+    "continuationAlreadyFinished": "You already finished this follow-up. Opening it for review.",
+    "continuationStatusComplete": "Complete",
+    "continuationStatusProgress": "In progress",
+    "continuationTasksProgress": "{done} / {total} lessons",
+    "continuationContinue": "Continue",
+    "continuationViewJourney": "View journey",
+    "continuationInsufficientCoins": "Not enough coins to start a new journey.",
+    "continuedFromLabel": "Continued from:",
+    "depthShallow": "Short",
+    "depthStandard": "Typical",
+    "depthDeep": "Thorough"
+  },
+  "Task": {
+    "overview": "Overview",
+    "why": "Why this matters",
+    "guide": "From your guide",
+    "guideHint": "What to focus on in the resources—not just a link dump. New roadmaps include this by default.",
+    "instructions": "Instructions",
+    "writingsTitle": "Notes for this lesson",
+    "writingsCollapsedHint": "Private note or public feed comment — expand to write.",
+    "writingTabNote": "Note",
+    "writingTabComment": "Comment",
+    "writingsIntro": "Private notes stay on your account. An optional feed message can appear in the public feed when your profile is public.",
+    "notesPrivate": "Private notes",
+    "notesPrivateHelp": "For your eyes only—reflections, links, and checkpoint work. Longer reflections can still earn bonus coins on the free plan when you complete the lesson.",
+    "notesPlaceholder": "Ideas, links, reflections, paste-outs…",
+    "feedCaptionLabel": "Feed message (optional)",
+    "feedCaptionHelp": "Short takeaway others can read next to this lesson in the feed. Only shown if your learner profile is public. Never paste secrets or anything you would not share in public.",
+    "feedCaptionPlaceholder": "e.g. Finally grokked closures — this exercise clicked when I…",
+    "saveNotes": "Save",
+    "complete": "Mark complete",
+    "completing": "Saving…",
+    "backToRoadmap": "Back to roadmap",
+    "celebrationTask": "Task crushed!",
+    "celebrationPhase": "Topic complete!",
+    "celebrationRoadmap": "Epic finished!",
+    "celebrationCoins": "You earned {n} bonus coins",
+    "checkpointHintTitle": "Stuck on the hands-on steps?",
+    "checkpointHintNotQuiz": "This is practical help for the lesson above—it is not part of the multiple-choice self-check below.",
+    "selfCheckIntro": "Short multiple-choice questions on this task. You can retry as many times as you need—we track attempts for learning analytics.",
+    "quizQuestion": "Question {n}",
+    "quizSubmit": "Submit answers",
+    "quizSubmitHelp": "We record each submission for your progress. Answer every question, then submit.",
+    "quizChecking": "Submitting…",
+    "quizPassed": "Perfect — you can finish the task below.",
+    "quizFailedToastTitle": "Submitted — review below",
+    "quizFailedHint": "Questions that need another look: {numbers}.",
+    "quizQuestionWrong": "Question {n}: that option isn’t correct. Correct answer: {correct}",
+    "quizErrorInvalid": "We couldn’t read your answers. Please try again.",
+    "quizAnswerEvery": "Choose one option for each question before submitting.",
+    "quizErrorInvalidChoice": "An answer didn’t match the quiz data. Refresh the page and try again.",
+    "quizErrorNotAvailable": "This lesson isn’t open for quiz submission right now.",
+    "quizErrorNoQuiz": "There is no quiz for this lesson.",
+    "quizFailed": "{correct} of {total} correct. Change the ones that missed and submit again.",
+    "quizAttemptsLine": "Submissions: {submissions} · Incorrect runs: {fails}",
+    "quizPickOne": "Choose one answer per question.",
+    "quizLegacyNoQuiz": "This task has no self-check yet (older roadmap). You can complete it directly.",
+    "completeBlockedQuiz": "Pass the self-check above first.",
+    "completeReady": "When you are happy with your work, seal the task."
+  },
+  "Referral": {
+    "title": "Invite friends",
+    "body": "Share your code. When someone applies it, you get 30 coins.",
+    "joinHow": "Joining with a code: use the field below (or this same page from the coin button in the header). Enter your friend’s code once and tap Apply. New accounts can apply one code; your referrer gets their bonus when you do.",
+    "yourCode": "Your code",
+    "placeholder": "Friend's code",
+    "apply": "Apply code",
+    "success": "Referral applied — your referrer earned bonus coins. Welcome!",
+    "alreadyReferred": "You already used a referral code. Thanks for joining!",
+    "errors": {
+      "INVALID_CODE": "That code doesn't match an active learner.",
+      "ALREADY_REFERRED": "You can only use one referral code.",
+      "UNKNOWN": "Something went wrong. Try again."
+    }
+  },
+  "Achievements": {
+    "first_step": {
+      "title": "First Step",
+      "description": "Complete your first task."
+    },
+    "phase_crusher": {
+      "title": "Phase Crusher",
+      "description": "Finish every task in a phase."
+    },
+    "consistent_learner": {
+      "title": "Consistent Learner",
+      "description": "Stay active across multiple sessions."
+    },
+    "roadmap_finisher": {
+      "title": "Roadmap Finisher",
+      "description": "Complete an entire roadmap."
+    }
+  },
+  "Common": {
+    "learnMore": "Learn more",
+    "save": "Save",
+    "close": "Close",
+    "loading": "Loading…",
+    "error": "Something went wrong."
+  }
+}

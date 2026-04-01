@@ -1,0 +1,583 @@
+{
+  "Locale": {
+    "groupLabel": "Jezik",
+    "current": "Trenutni jezik: {name}",
+    "switchTo": "Prebaci na {name}",
+    "enName": "Engleski",
+    "deName": "Nemački",
+    "frName": "Francuski",
+    "esName": "Španski",
+    "ruName": "Ruski",
+    "srName": "Srpski",
+    "trName": "Turski"
+  },
+  "Legal": {
+    "backHome": "Na početnu",
+    "notLegalAdvice": "Ovi tekstovi služe radi transparentnosti i nisu pravni savet. Za regulisanu delatnost neophodna je provera kod stručnjaka.",
+    "relatedPages": "Povezane stranice",
+    "seeTerms": "Uslovi korišćenja",
+    "seePrivacy": "Politika privatnosti",
+    "privacy": {
+      "metaTitle": "Politika privatnosti — TheOpenLearn",
+      "metaDescription": "Kako TheOpenLearn prikuplja, koristi, čuva i deli podatke kada koristite servis.",
+      "title": "Politika privatnosti",
+      "updated": "Ažurirano: 31. mart 2026.",
+      "intro": "TheOpenLearn pomaže da od materijala za učenje napraviš strukturisan plan. Ovaj dokument objašnja kako postupamo sa ličnim podacima u vezi sa sajtom, aplikacijom i pratećim funkcijama (Servis). Korišćenjem Servisa prihvataš ovu politiku.",
+      "sections": [
+        {
+          "title": "Koje podatke prikupljamo",
+          "body": "Nalog i identitet: Pri prijavi, autentifikaciju obezbeđuje naš provajder identiteta (npr. Clerk), koji može da obrađuje e-poštu, ime, sliku profila i bezbednosne podatke prema svojoj politici.\n\nSadržaj za učenje: Možeš da pošalješ URL-ove, tekst, fajlove ili beleške radi generisanja planova, zadataka i srodnog sadržaja. Taj materijal obrađujemo radi pružanja Servisa.\n\nKorišćenje i dijagnostika: Možemo da prikupljamo tehničke i statističke podatke (uređaj, pregledač, približan region, korišćenje funkcija, logove grešaka) radi stabilnosti i bezbednosti.\n\nZajednica: Ako uključiš opcije vidljivosti ili zajednice, čuvamo postavke i agregatne ili javne informacije koje izabereš da prikažeš."
+        },
+        {
+          "title": "Kako koristimo podatke",
+          "body": "Podaci služe da pružimo, održavamo i unapređujemo Servis (uključujući AI), personalizujemo iskustvo, komuniciramo oko proizvoda, sprovodimo uslove, ispunjavamo zakone i štitimo korisnike i platformu.\n\nNe prodajemo tvoje lične podatke."
+        },
+        {
+          "title": "AI obrada i dobavljači",
+          "body": "Za generisanje planova i pomoći pri učenju, sadržaj koji pošalješ može biti prosleđen trećim licima (AI i infrastruktura), u meri potrebnoj za zahtev i rad Servisa. Očekujemo da oni postupaju po ugovoru i važećem pravu. Ne šalji visoko osetljive podatke (npr. zdravstvene kartone, lične brojeve) ako nisi spreman_lna na rizik."
+        },
+        {
+          "title": "Kolačići i slične tehnologije",
+          "body": "Mi i naši partneri možemo koristiti kolačiće, lokalnu memoriju i slične tehnologije za sesiju, postavke, bezbednost i analitiku. U pregledaču možeš ograničiti deo toga; neke funkcije možda neće raditi kako treba."
+        },
+        {
+          "title": "Čuvanje, bezbednost i tvoja prava",
+          "body": "Čuvamo podatke dok je potrebno za Servis, zakonske obaveze, rešavanje sporova i sprovođenje ugovora. Primenjujemo razumne tehničke i organizacione mere zaštite; prenos preko interneta nikad nije apsolutno bez rizika.\n\nU zavisnosti od zemlje, možda imaš pravo na uvid, ispravku, brisanje ili izvoz određenih podataka, ili prigovor/ograničenje obrade. Često to možeš kroz nalog ili kontakt. Možda imaš pravo na pritužbu nadležnom telu."
+        },
+        {
+          "title": "Prenos u druge zemlje i izmene",
+          "body": "Podaci se mogu obrađivati i van zemlje u kojoj živiš. Gde je potrebno, koristimo odgovarajuće zaštite. Politiku možemo ažurirati — datum izmene je na vrhu. Daljim korišćenjem prihvataš izmene u okviru dozvoljenom zakonom."
+        }
+      ]
+    },
+    "terms": {
+      "metaTitle": "Uslovi korišćenja — TheOpenLearn",
+      "metaDescription": "Pravila i uslovi korišćenja TheOpenLearn servisa.",
+      "title": "Uslovi korišćenja",
+      "updated": "Ažurirano: 31. mart 2026.",
+      "intro": "Ovi uslovi uređuju pristup i korišćenje TheOpenLearn-a. Otvaranjem naloga, sajta ili funkcija prihvataš ih. Ako se ne slažeš, nemoj koristiti Servis.",
+      "sections": [
+        {
+          "title": "O Servisu",
+          "body": "TheOpenLearn nudi alate za učenje, uključujući AI planove, zadatke, napredak, gamifikaciju i opciono poređenje u zajednici. Servis je namenjen ličnom učenju i produktivnosti. Nije škola, fakultet, poslodavac niti profesionalni savetnik. Izlaz sistema može biti netačan ili nepotpun; snosiš rizik za način korišćenja."
+        },
+        {
+          "title": "Nalog i podobnost",
+          "body": "Dužni ste da navedete tačne informacije i čuvate pristupne podatke u tajnosti. Odgovorni ste za aktivnosti na nalogu. Morate biti punoletni odnosno dovoljno stari da zakonski možete zaključiti ugovor u skladu sa mestom gde živite. Prijava preko trećeg lica podleže njihovim uslovima."
+        },
+        {
+          "title": "Tvoj sadržaj",
+          "body": "Zadržavate prava na sadržaj koji pošaljete. TheOpenLearn-u i podizvođačima dajete neisključivu licencu da hostuju, obrađuju, prilagođavaju i prikazuju taj sadržaj koliko je potrebno za rad, unapređenje i promociju Servisa (npr. generisanje zadataka, kontrolnu tablu, bezbednost). Potvrđujete da imate pravo na materijal i da on ne krši zakon ili prava drugih.\n\nMožemo ukloniti sadržaj ili suspendovati pristup ako postoji zloupotreba, rizik ili zakonska obaveza."
+        },
+        {
+          "title": "Dozvoljena upotreba",
+          "body": "Ne smete zloupotrebljavati Servis: ilegalne aktivnosti, uznemiravanje, malver, probijanje bezbednosti, skrejping ili automatizacija koja šteti performansama, preprodaja ili konkurentsko iskorišćavanje u izlazu, kršenje intelektualne svojine. Možemo sprovesti istragu i prekinuti pristup, uključujući brisanje naloga."
+        },
+        {
+          "title": "Odricanje od odgovornosti i ograničenje štete",
+          "body": "SERVIS SE PRUŽA „KAKAV JESTE“ I „KAKAV JE DOSTUPAN.“ U NAJVEĆOJ MERI DOZVOLJENOJ ZAKONOM, ISKLJUČUJEMO IMPLICITNE GARANCIJE, UKLJUJUĆI PODOBNOST ZA ODREĐENU NAMENU. NE GARANTUJEMO TAČNOST AI IZLAZA NITI NEPREKIDAN RAD.\n\nU NAJVEĆOJ MERI DOZVOLJENOJ ZAKONOM, THEOPENLEARN I TIM KOJI RAZVIJA PROIZVOD NE ODGOVARAJU ZA POSREDNU, SLUČAJNU, POSEBNU, POSLEDIČNU ILI KAZNENU ŠTETU, NITI ZA GUBITAK DOBITI, PODATAKA ILI UGLEDA. UKUPNA ODGOVORNOST PO TUŽBAMA U VEZI SA SERVISOM NE PRELAZI VEĆI IZNOS OD UPLATA KOJE STE NAM PLATILI U POSLEDNJIH DVANAEST MESECI ILI 50 EUR, OSIM AKO ZAKON DRUGAČIJE ODREĐUJE."
+        },
+        {
+          "title": "Izmene, pravo i kontakt",
+          "body": "Možemo menjati ove uslove ili Servis. Izmene ćemo objaviti ovde gde je moguće; nastavak korišćenja može značiti prihvatanje. Ako ne prihvatate, prestanite da koristite Servis. Sporovi se, osim gde zakon drugačije nalaže, tumače po pravu zemlje u kojoj operater drži Servis, bez odredbi o sukobu zakona.\n\nKontakt preko opcija objavljenih uz Servis. Za brisanje naloga ili podatke koristite kontrole u aplikaciji gde postoje."
+        }
+      ]
+    }
+  },
+  "Meta": {
+    "title": "TheOpenLearn — AI put učenja",
+    "description": "Pretvori linkove, PDF ili beleške u igriv plan: faze, zadaci, XP, novčići za besplatan plan, preporuke i jasan napredak kad završiš zadatke i teme."
+  },
+  "Landing": {
+    "nav": {
+      "features": "Funkcije",
+      "how": "Kako radi",
+      "howShort": "Kako",
+      "gamification": "Napredak",
+      "languages": "Jezici",
+      "rewards": "Nagrade",
+      "community": "Feed",
+      "communityShort": "Feed",
+      "signIn": "Prijava",
+      "getStarted": "Započni",
+      "menu": "Meni",
+      "menuTitle": "Meni sajta"
+    },
+    "hero": {
+      "kicker": "Od materijala do putovanja",
+      "scrollCue": "Skroluj",
+      "title": "Nauči bilo šta uz plan koji deluje kao igra — ne kao tabela.",
+      "subtitle": "Dodaj link, PDF ili beleške. Objasni cilj, potvrdi plan sa nama, pa otključavaj faze, zadatke i nagrade.",
+      "coinTeaser": "Na besplatnom nalogu početni novčići za nova putovanja; najviše kad zatvoriš celu mapu (plus prekretnice u temama), mesečna dopuna i kod za preporuke.",
+      "cta": "Započni besplatno",
+      "secondary": "Vidi kako radi"
+    },
+    "how": {
+      "title": "Kako radi",
+      "step1Title": "Unesi materijal",
+      "step1Body": "Nalepi URL, otpremi PDF (spremno u arhitekturi) ili zalepi tekst — i kratko šta znači „gotovo“ za tebe.",
+      "step2Title": "Potvrdi razumevanje",
+      "step2Body": "Suma predmeta, obima, težine, jezika i dubine. Ti menjaš i odobravaš pre generisanja.",
+      "step3Title": "Igraj putovanje",
+      "step3Body": "Faze idu redom. Svaki zadatak ima resurse, kontrolne tačke, XP i dostignuća. Na besplatnom planu zarađuješ i novčiće kad završiš teme i celu mapu."
+    },
+    "features": {
+      "title": "Za učenike danas",
+      "cards": {
+        "structured": {
+          "title": "Struktura na prvom mestu",
+          "body": "Faze, zadaci, reference i kontrolne tačke čine velike teme izvodljivim."
+        },
+        "ai": {
+          "title": "Pažljiv AI",
+          "body": "Bez iznenađujućeg zida zadataka — prvo uskladimo nameru, pa generišemo."
+        },
+        "progress": {
+          "title": "Vidljiv napredak",
+          "body": "Tok, serija i jasno stanje novčića na besplatnom nalogu — uvek vidiš šta si završio/la i šta je sledeće."
+        }
+      }
+    },
+    "rewards": {
+      "title": "Novčići i nagrade",
+      "subtitle": "Lagana petlja drži motivaciju iskrenom: malo potrošiš na novo putovanje, vraćaš završetkom, bonusi za trud, plus mesečna i preporučna dopuna.",
+      "cards": {
+        "starter": {
+          "title": "Početni iznos",
+          "body": "Besplatan nalog počinje sa 50 novčića — dovoljno za nekoliko mapa da osetiš petlju pre nego što moraš da zarađuješ."
+        },
+        "spend": {
+          "title": "Pokreni put",
+          "body": "Svaka nova mapa na besplatnom planu košta 10 novčića — generisanje ostaje namerno i u skladu sa fokusom."
+        },
+        "earn": {
+          "title": "Zaradi završetkom",
+          "body": "Svi zadaci u temi: +10 novčića. Cela mapa: +25 na besplatnom planu (uključuje jednokratni bonus za završetak). Sadržajne beleške pri završetku zadatka mogu dodati još +5."
+        },
+        "monthly": {
+          "title": "Mesečna dodela",
+          "body": "Svakog kalendarskog meseca besplatni učenici dobijaju +30 novčića automatski — bez stresa oko serije."
+        },
+        "referrals": {
+          "title": "Pozovi prijatelje",
+          "body": "Podeli kod sa table. Kad ga neko primeni, ti dobijaš +30 novčića — oni i dalje imaju pun proizvod."
+        },
+        "moments": {
+          "title": "Prekretnice koje se osete",
+          "body": "Kad završiš zadatak, temu ili celu mapu, jasno vidiš šta si otključao/la i šta sledi — ne samo nejasno „gotovo“ bez konteksta."
+        }
+      }
+    },
+    "gamification": {
+      "title": "Motivacija bez žurke",
+      "body": "Skupljaj XP, značke kao Prvi korak i Završen put i novčiće kad zatvoriš faze na besplatnom planu — stalan podsticaj bez šminka.",
+      "chip1": "XP i nivoi",
+      "chip2": "Dostignuća",
+      "chip3": "Prekretnice",
+      "chip4": "Novčići (besplatno)",
+      "panel": "XP odražava dubinu, značke navike. Svaki važan korak — zadatak, tema ili ceo put — daje jasno priznanje i sledeći korak. Na besplatnom planu novčići drže petlju nagrađenom."
+    },
+    "i18n": {
+      "title": "Na tvom jeziku",
+      "body": "TheOpenLearn trenutno pokriva engleski, nemački, francuski, španski, ruski, srpski i turski — još lokala lako dodaješ. Jezik interfejsa i puta učenja ostaje uz tebe."
+    },
+    "cta": {
+      "title": "Spremni za smirenije učenje?",
+      "body": "Napravi nalog, preuzmi početne novčiće i generiši prvu mapu za nekoliko minuta.",
+      "button": "Registracija"
+    },
+    "footer": {
+      "tagline": "Igriv AI planer učenja",
+      "privacy": "Privatnost",
+      "terms": "Uslovi",
+      "developedBy": "Razvio Sanel Hadzini"
+    }
+  },
+  "Auth": {
+    "signIn": "Prijava",
+    "signUp": "Novi nalog"
+  },
+  "Community": {
+    "metaTitle": "Feed",
+    "headline": "Tvoj feed učenja",
+    "intro": "Javna završetka lekcija i značke učenika koji su uključili profil. Rang liste — poređenje statistike.",
+    "feedPostingHint": "Nema posebnog polja za „novu objavu“: završi lekciju (opcioni kratak takeaway na toj stranici) ili skroluj i koristi Komentari ispod kartice.",
+    "tabFeed": "Živi feed",
+    "tabRank": "Rang liste",
+    "feedKicker": "Feed",
+    "feedScopeLabel": "Ko",
+    "feedFilterEveryone": "Svi",
+    "feedFilterFollowing": "Praćenja",
+    "feedTypeLabel": "Prikaži",
+    "feedTypeAll": "Sva aktivnost",
+    "feedTypeLessons": "Samo lekcije",
+    "feedTypeBadges": "Samo značke",
+    "feedEmptyFollowing": "Još nema aktivnosti od ljudi koje pratiš.",
+    "feedEmptyFollowingHint": "Otvori javne profile i zaprati učenike — njihov napredak pojaviće se ovde.",
+    "feedSignInFollowingTitle": "Prijavi se da filtriraš po praćenjima",
+    "feedSignInCta": "Prijavi se da uđeš u feed",
+    "feedOpenOwnLesson": "Otvori ovu lekciju",
+    "feedJourneyLabel": "Putovanje",
+    "feedCommentsHeading": "Komentari",
+    "feedCommentPlaceholder": "Podrži, pitaj ili podeli kako si rešio_sla slično…",
+    "feedCommentSubmit": "Objavi",
+    "feedCommentPosting": "Šalje se…",
+    "feedCommentEmpty": "Još nema komentara — započni razgovor.",
+    "feedSignInToComment": "Prijavi se da komentarišeš",
+    "feedAttachLessons": "Zakači moje lekcije",
+    "feedRefPickerTitle": "Referenciraj svoje lekcije",
+    "feedRefPickerHint": "Do četiri lekcije. Link vidiš samo ti; drugi vide naslove.",
+    "feedRefPickerDone": "Gotovo",
+    "feedYourLessonChip": "Moja lekcija",
+    "feedReferencedLesson": "Povezana lekcija",
+    "difficultyNote": "Izazov merimo kao prosečan XP po završenom zadatku (generisanje dodeljuje različite XP vrednosti). Nije savršena težina, ali više naglašava teže staze.",
+    "activityTitle": "Skorašnja aktivnost",
+    "activityHint": "Poslednja završetka i značke učenika sa javnim profilom.",
+    "activityEmpty": "Još nema javne aktivnosti. Završi lekciju ili uključi profil.",
+    "activityVerbLesson": "je završio_la lekciju",
+    "activityVerbBadge": "je osvojio_la značku",
+    "filtersTitle": "Nađi učenike",
+    "filtersHint": "Filtriraj po oblasti, sortiraj po zadacima, rigoru, XP, seriji, završenim mapama i sl.",
+    "filterSort": "Rangiraj po",
+    "filterTopic": "Tema",
+    "clusterAll": "Sve oblasti",
+    "sort_lessons": "Završeni zadaci",
+    "sort_rigor": "Izazov / zadatak",
+    "sort_xp": "Ukupno XP",
+    "sort_breadth": "Broj oblasti",
+    "sort_streak": "Serija",
+    "sort_roadmaps": "Završene mape",
+    "radarPreviewTitle": "Oblik veština (primer)",
+    "radarPreviewBody": "Pet ose u odnosu na sve na listi. Otvori profil za ceo grafikon.",
+    "emptyCohort": "Još niko sa javnim profilom ne ispunjava filter — budi prvi_a.",
+    "tableTitle": "Javni učenici",
+    "tableCount": "{count, plural, one {# učenik} few {# učenika} other {# učenika}}",
+    "emptyTable": "Još niko nije uključio javan profil. U podešavanjima ga uključi da se pojaviš ovde.",
+    "colLearner": "Učenik",
+    "colLessons": "Zadaci",
+    "colRigor": "Prosek XP / zadatak",
+    "colXp": "XP",
+    "colBreadth": "Oblasti",
+    "colStreak": "Serija",
+    "colRoadmaps": "Završene mape",
+    "anon": "Učenik",
+    "you": "Ti",
+    "profile": "Profil",
+    "optInCta": "Uključi javan profil",
+    "axisVolume": "Obim",
+    "axisVolumeHint": "Koliko zadataka si završio_la.",
+    "axisRigor": "Rigor",
+    "axisRigorHint": "Prosečna XP težina po završenom zadatku.",
+    "axisBreadth": "Domet",
+    "axisBreadthHint": "Koliko različitih oblasti pokrivaš.",
+    "axisDrive": "Pogon",
+    "axisDriveHint": "Serija i značke — doslednost.",
+    "axisMastery": "Majstorstvo",
+    "axisMasteryHint": "Potpuno završene mape, značke i dubina XP.",
+    "privateProfileMeta": "Profil · TheOpenLearn",
+    "profileMetaFallback": "Javan TheOpenLearn profil",
+    "backToCommunity": "Nazad na feed",
+    "publicLearner": "Javan profil",
+    "memberSince": "Na platformi od {date}",
+    "statLessons": "Završeni zadaci",
+    "statRigor": "Prosek XP / zadatak",
+    "statRigorHint": "Više znači da tvoji završeni zadaci nose teže XP.",
+    "statXp": "Ukupno XP",
+    "statBreadth": "Oblasti (klasteri)",
+    "statStreak": "Dani serije",
+    "statRoadmaps": "Mape 100% gotove",
+    "statBadges": "Dostignuća",
+    "radarCardTitle": "Oblik učenja",
+    "radarCardBody": "Petougao sumira kako izgledaš u odnosu na druge javne učenike. Pređi mišem preko oznaka ose za detalje.",
+    "settingsTitle": "Vidljivost u zajednici",
+    "settingsIntro": "Biraš da li se pojavljuješ u direktorijumu i toku aktivnosti.",
+    "visibilityCardTitle": "Javan profil",
+    "visibilityCardBody": "Uključi samo ako ti odgovara deljenje agregiranih statistika i prikaznog imena sa naloga.",
+    "formPublicLabel": "Javan profil učenika",
+    "formPublicHelp": "Prikazuje ime, opciono bio, statistiku i grafikon u feedu i rang listama. E-pošta se ne prikazuje.",
+    "formBioLabel": "Javno bio (opciono)",
+    "formBioPlaceholder": "Šta voliš da učiš ili gradiš…",
+    "formSave": "Sačuvaj",
+    "formSaving": "Čuva se…",
+    "toastSaved": "Sačuvano",
+    "toastError": "Čuvanje nije uspelo",
+    "statFollowers": "Pratioci",
+    "statFollowing": "Praćenja",
+    "follow": "Zaprati",
+    "followingButton": "Pratiš",
+    "signInToFollow": "Prijavi se da pratiš",
+    "followsYou": "Prati te",
+    "followersListTitle": "Pratioci — {name}",
+    "followersListSubtitle": "{count, plural, one {# pratilac} other {# pratilaca}}",
+    "followingListTitle": "Praćenja — {name}",
+    "followingListSubtitle": "{count, plural, one {# nalog} other {# naloga}}",
+    "backToProfile": "Nazad na profil korisnika {name}",
+    "emptyFollowers": "Još nema pratilaca.",
+    "emptyFollowing": "Još ne prati nikoga.",
+    "privateProfileBadge": "Privatan profil"
+  },
+  "Dashboard": {
+    "title": "Kontrolna tabla",
+    "welcome": "Dobrodošao_la, {name}",
+    "subtitle": "Uči paralelno — svako putovanje ima svoj napredak; pregled je ispod.",
+    "newRoadmap": "Novi plan učenja",
+    "journeys": "Tvoja učenja",
+    "progress": "Ukupan napredak",
+    "overallProgress": "Napredak kroz zadatke",
+    "overallAcrossJourneys": "{count, plural, one {Kroz # aktivno učenje} few {Kroz # aktivna učenja} other {Kroz # aktivnih učenja}}",
+    "parallelLearnings": "Aktivna učenja",
+    "journeyStatusLine": "{active} u toku ili nije započeto · {done} završeno",
+    "phasesProgress": "{done} / {total} faza potpuno završeno",
+    "phasesCardTitle": "Završene faze",
+    "tasksThisWeek": "Ove nedelje",
+    "tasksThisWeekSub": "{count, plural, one {# zadatak u poslednjih 7 dana} few {# zadatka u poslednjih 7 dana} other {# zadataka u poslednjih 7 dana}}",
+    "analyticsTitle": "Analitika",
+    "analyticsSummaryLine": "{overall}% ukupno · {learnings} aktivnih učenja · {done}/{total} zadataka",
+    "tasksDone": "Završeni zadaci",
+    "xp": "Ukupno XP",
+    "xpAndStreak": "XP · serija",
+    "streakDays": "{count, plural, one {# dan serije} few {# dana serije} other {# dana serije}}",
+    "achievements": "Dostignuća",
+    "walletTeaserCta": "Koini i pozivnice",
+    "walletPageTitle": "Koini i pozivnice",
+    "walletPageIntro": "Stanje koina, kako ih zaraditi na besplatnom planu i pozivnice.",
+    "walletBack": "Nazad na kontrolnu tablu",
+    "openWalletAria": "Otvori koini i pozivnice",
+    "walletBalance": "Trenutno stanje",
+    "walletHowTitle": "Kako zaraditi koina",
+    "walletBullet1": "Na besplatnom planu novi put košta koina; počinješ sa početnim stanjem.",
+    "walletBullet2": "Završena tema: 10 novčića; cela mapa: 25 novčića (besplatni plan). Sadržajne beleške (~150+ znakova) pri završetku zadatka: +5.",
+    "walletBullet3": "Besplatni nalozi dobijaju mesečno dopunu.",
+    "walletBullet4": "Pozivni kod uzima u obzir ko te je pozvao kad se pridružiš.",
+    "walletProTitle": "Pro nalog",
+    "walletProBody": "Tvoj plan ne troši koin za nove puteve. I dalje možeš podeliti kod ispod — kad neko primeni, tvoj nalog dobija bonus za preporuku.",
+    "emptyJourneys": "Još nema mapa — prvi put počinje jednim klikom.",
+    "view": "Otvori",
+    "continue": "Nastavi",
+    "latestJourney": "Poslednje · nastavi odavde",
+    "allJourneys": "Sva putovanja",
+    "tasksLabel": "{count, plural, one {# zadatak} few {# zadatka} other {# zadataka}}",
+    "navMenu": "Meni",
+    "navMenuTitle": "Navigacija aplikacije"
+  },
+  "TopicClusters": {
+    "general": "Opšte učenje",
+    "mathematics": "Matematika i logika",
+    "life-sciences": "Životne nauke",
+    "physical-sciences": "Prirodne nauke",
+    "computing": "Programiranje i softver",
+    "technology": "Tehnologija i sistemi",
+    "design": "Dizajn i proizvod",
+    "languages": "Jezici i komunikacija",
+    "business": "Biznis i karijera",
+    "arts-humanities": "Umetnost i humanističke nauke",
+    "health-wellbeing": "Zdravlje i dobrobit"
+  },
+  "AchievementsPage": {
+    "title": "Dostignuća",
+    "subtitle": "Skupljaj XP i značke dok napreduješ. Ilustrovane kartice dolaze — emoji su privremeni.",
+    "backDashboard": "Nazad na tablu",
+    "collectionProgress": "Kolekcija",
+    "unlocked": "otključano",
+    "stateUnlocked": "Osvojeno",
+    "stateLocked": "Zaključano",
+    "earnedOn": "Datum: {date}",
+    "artworkPlaceholder": "Ilustracija značke",
+    "artworkHint": "Ovde može slika kasnije — emoji je zamenjiva oznaka."
+  },
+  "Learn": {
+    "title": "Napravi plan učenja",
+    "subtitle": "Reci šta želiš da naučiš i odakle materijal. Pre mape sumiramo razumevanje.",
+    "subtitleNoTitle": "Podeli link, zalepi tekst ili otpremi fajl. Prepoznajemo teme i predlažemo naslove — jedan izvor može da postane više putovanja ako meša različite predmete.",
+    "sourceMode": "Kako dodaješ materijal?",
+    "sourceModeLink": "Link",
+    "sourceModeText": "Tekst",
+    "sourceModeFile": "Fajl",
+    "linkUrl": "URL izvora",
+    "linkNotes": "Beleške ili odlomci (opciono)",
+    "linkNotesHint": "Dodaj citate ili nazive poglavlja da analiza pogodi ono što je bitno.",
+    "textBody": "Nalepi materijal",
+    "textBodyHint": "Poglavlja, beleške, transkripti — bilo šta od čega želiš mapu učenja.",
+    "fileUpload": "Fajl",
+    "fileTypesHint": "PDF (dodaj odlomke ispod) ili .txt / .md (ceo fajl se čita).",
+    "fileExtraNotes": "Dodatni tekst uz fajl",
+    "fileExtraPlaceholder": "Za PDF: zalepi važne delove ovde. Za .txt / .md možeš ostaviti prazno ili dodati kontekst.",
+    "proposalsTitle": "Pregled predloženih putovanja",
+    "proposalsDescription": "Izveli smo ovo iz tvog izvora. Isključi šta ne želiš, izmeni naslove i detalje, pa generiši.",
+    "scopeTitle": "Uskladi obim",
+    "scopeDescription": "Izvor deluje velik (npr. kompletna zvanična dokumentacija). Odgovori da bismo uskladili dubinu i fokus. Može više krugova dok model ne prestane da pita.",
+    "scopeQuestionsLabel": "Pitanja",
+    "scopeYourAnswers": "Tvoji odgovori",
+    "scopeAnswersPlaceholder": "Budi konkretan: ciljevi, rok, stack, teme uključi/izostavi, željena dubina.",
+    "scopeSubmit": "Pošalji odgovore",
+    "scopeSkip": "Preskoči — najbolja pretpostavka",
+    "scopeAligned": "Obim ažuriran. Pregledaj put ispod i generiši.",
+    "scopeAnswersRequired": "Unesi odgovore ili izaberi Preskoči.",
+    "scopeFinishFirstHint": "Prvo odgovori na pitanja obima ili ih preskoči.",
+    "sourceScaleLabel": "Veličina izvora",
+    "sourceScale": {
+      "narrow": "Usko",
+      "moderate": "Srednje",
+      "broad": "Široko",
+      "encyclopedic": "Veliki docs / kišobranska tema"
+    },
+    "journeyInclude": "Napravi ovo putovanje",
+    "journeyTitle": "Naslov putovanja",
+    "journeyFocus": "Fokus u izvoru",
+    "generateRoadmaps": "Generiši mapu(e)",
+    "selectAtLeastOne": "Izaberi bar jedno putovanje za kreiranje.",
+    "success": "Mapa(e) spremne",
+    "errors": {
+      "linkRequired": "Unesi ispravan URL.",
+      "linkInvalid": "URL ne izgleda ispravno.",
+      "contentRequired": "Nalepi materijal za analizu.",
+      "fileOrTextRequired": "Otpremi fajl ili zalepi tekst.",
+      "pdfNeedsExcerpt": "Za PDF zalepi ključne odlomke u polje (pun izvlačak teksta dolazi kasnije).",
+      "fileRead": "Nismo uspeli da pročitamo fajl.",
+      "unsupportedFile": "Koristi .pdf, .txt ili .md.",
+      "invalidJourney": "Nešto nije u redu u detaljima putovanja — proveri polja.",
+      "insufficientCoins": "Treba ti 10 novčića da započneš novo putovanje. Zarađuj završetkom zadataka, tema, pozivima prijatelja ili mesečnim bonusom."
+    },
+    "fields": {
+      "topic": "Tema / naslov",
+      "sourceType": "Tip izvora",
+      "sourceLink": "Link",
+      "sourcePdf": "PDF",
+      "sourceText": "Tekst",
+      "content": "Sadržaj izvora",
+      "contentLinkHint": "Nalepi URL članka ili doksa. Za MVP, dodaj i važne odlomke ispod.",
+      "contentPdfHint": "Otpremanje je predviđeno; pun izvlačak teksta dolazi kasnije — za sada zalepi ključne strane kao tekst.",
+      "contentTextHint": "Poglavlja, beleške ili transkripti.",
+      "language": "Jezik mape i interfejsa",
+      "level": "Nivo iskustva",
+      "goal": "Opcioni cilj",
+      "goalHint": "Zašto učiš? Šta bi bilo „uspeo_sam“?"
+    },
+    "levels": {
+      "beginner": "Početnik",
+      "intermediate": "Srednji",
+      "advanced": "Napredni"
+    },
+    "analyze": "Analiziraj pomoću AI",
+    "analyzing": "Analiza…",
+    "back": "Nazad"
+  },
+  "Understanding": {
+    "title": "Potvrdi razumevanje",
+    "description": "Ispravi šta nije tačno. Kada bude dobro, generišemo mapu.",
+    "subject": "Predmet",
+    "goal": "Ciljni ishod",
+    "difficulty": "Težina",
+    "scope": "Predloženi opseg",
+    "language": "Jezik",
+    "readingLevel": "Čitanje / iskustvo",
+    "depth": "Dubina mape",
+    "depthShallow": "Plitko",
+    "depthStandard": "Standardno",
+    "depthDeep": "Duboko",
+    "confirm": "Generiši mapu",
+    "cancel": "Otkaži",
+    "intentRef": "Namera (referenca)"
+  },
+  "Duplicate": {
+    "title": "Deluje poznato",
+    "body": "Ovo je vrlo slično nečemu što si već započeo. Nastavi postojeću ili napravi novu ipak.",
+    "continue": "Nastavi postojeće",
+    "createNew": "Ipak napravi novo"
+  },
+  "Roadmap": {
+    "goal": "Cilj učenja",
+    "duration": "Procena trajanja",
+    "phase": "Faza",
+    "tasks": "Zadaci",
+    "locked": "Zaključano",
+    "available": "Spremno",
+    "done": "Gotovo",
+    "resources": "Resursi",
+    "howToPass": "Kako prolaziš",
+    "evaluation": "Samoprovera",
+    "openTask": "Otvori zadatak",
+    "progress": "Napredak putovanja",
+    "phaseComplete": "Faza gotova — bravo.",
+    "overviewTitle": "Pregled puta",
+    "overviewHint": "Skoči na fazu u detaljima ispod.",
+    "overviewTasksLine": "{done} od {total} zadataka"
+  },
+  "Task": {
+    "why": "Zašto je bitno",
+    "guide": "Od vodiča",
+    "guideHint": "Šta da uradiš u resursima—ne samo link. Nove mape puta ovo uključuju podrazumevano.",
+    "instructions": "Uputstva",
+    "notes": "Tvoje beleške",
+    "notesPlaceholder": "Beleške, linkovi, utisci…",
+    "saveNotes": "Sačuvaj beleške",
+    "complete": "Označi završeno",
+    "completing": "Čuvanje…",
+    "backToRoadmap": "Nazad na mapu",
+    "celebrationTask": "Zadatak savlada!",
+    "celebrationPhase": "Tema završena!",
+    "celebrationRoadmap": "Celo putovanje završeno!",
+    "celebrationCoins": "Osvojio/la si {n} bonus novčića",
+    "checkpointHintTitle": "Zaglavio/la si na praktičnim koracima?",
+    "checkpointHintNotQuiz": "Ovo je pomoć za lekciju iznad — nije deo samoprovere sa izborom odgovora ispod.",
+    "selfCheckIntro": "Kratka pitanja sa izborom odgovora. Možeš ponavljati — broj pokušaja čuvamo za analitiku učenja.",
+    "quizQuestion": "Pitanje {n}",
+    "quizSubmit": "Pošalji odgovore",
+    "quizSubmitHelp": "Svako slanje se beleži. Odgovori na sve pa pošalji.",
+    "quizChecking": "Šaljem…",
+    "quizPassed": "Sve tačno — ispod možeš završiti zadatak.",
+    "quizFailedToastTitle": "Primljeno — proveri ispod",
+    "quizFailedHint": "Ponovo pogledaj pitanja: {numbers}.",
+    "quizQuestionWrong": "Pitanje {n}: ovo nije tačno. Tačan odgovor: {correct}",
+    "quizErrorInvalid": "Odgovori nisu obrađeni. Pokušaj ponovo.",
+    "quizAnswerEvery": "Pre slanja odgovori na svako pitanje.",
+    "quizErrorInvalidChoice": "Jedan izbor ne odgovara podacima. Osveži stranicu.",
+    "quizErrorNotAvailable": "Kviz za ovu lekciju trenutno nije otvoren.",
+    "quizErrorNoQuiz": "Nema kviza za ovu lekciju.",
+    "quizFailed": "{correct} od {total} tačno. Ispravi i ponovo pošalji.",
+    "quizAttemptsLine": "Slanja: {submissions} · Promašaji: {fails}",
+    "quizPickOne": "Izaberi jedan odgovor po pitanju.",
+    "quizLegacyNoQuiz": "Stara mapa — nema samoprovere. Možeš odmah završiti.",
+    "completeBlockedQuiz": "Prvo prođi samoproveru iznad.",
+    "completeReady": "Kad si zadovoljan/na, zatvori zadatak."
+  },
+  "Referral": {
+    "title": "Pozovi prijatelje",
+    "body": "Podeli kod. Kada neko primeni tvoj kod, dobijaš 30 novčića.",
+    "yourCode": "Tvoj kod",
+    "placeholder": "Kod prijatelja",
+    "apply": "Primeni kod",
+    "success": "Kod primenjen — tvoj pozivalac je dobio bonus novčiće. Dobrodošao/la!",
+    "alreadyReferred": "Već si iskoristio/la kod pozivača.",
+    "errors": {
+      "INVALID_CODE": "Taj kod ne odgovara aktivnom korisniku.",
+      "ALREADY_REFERRED": "Možeš upotrebiti samo jedan kod pozivača.",
+      "UNKNOWN": "Nešto nije u redu. Pokušaj ponovo."
+    }
+  },
+  "Achievements": {
+    "first_step": {
+      "title": "Prvi korak",
+      "description": "Završi prvi zadatak."
+    },
+    "phase_crusher": {
+      "title": "Rusilac faze",
+      "description": "Završi sve zadatke u jednoj fazi."
+    },
+    "consistent_learner": {
+      "title": "Dosledan učenik",
+      "description": "Budi aktivan u više sesija."
+    },
+    "roadmap_finisher": {
+      "title": "Završen put",
+      "description": "Završi celu mapu."
+    }
+  },
+  "Common": {
+    "learnMore": "Detalji",
+    "save": "Sačuvaj",
+    "close": "Zatvori",
+    "loading": "Učitavanje…",
+    "error": "Nešto je pošlo naopako."
+  }
+}

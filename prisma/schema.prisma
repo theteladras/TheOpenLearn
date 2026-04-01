@@ -1,0 +1,259 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SourceType {
+  LINK
+  PDF
+  TEXT
+}
+
+enum RoadmapStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum TaskProgressState {
+  LOCKED
+  AVAILABLE
+  COMPLETED
+}
+
+enum UserPlan {
+  FREE
+  /** Unlimited journey starts; coin economy skipped for costs and grants. */
+  PRO
+}
+
+enum FeedActivityTarget {
+  TASK_COMPLETION
+  BADGE_EARNED
+}
+
+model User {
+  id           String    @id @default(cuid())
+  clerkId      String    @unique
+  email        String?
+  displayName  String?
+  /** Opt in to appear on the public community leaderboard & profile. */
+  profilePublic Boolean  @default(false)
+  /** Short line shown on public profile (no rich text). */
+  publicBio    String?   @db.VarChar(280)
+  plan         UserPlan  @default(FREE)
+  /** Learning credits; FREE users spend on new journeys, earn from milestones. */
+  coins        Int       @default(50)
+  /** Unique short code for referrals (set on first load if missing). */
+  referralCode     String? @unique
+  referredByUserId String?
+  referredBy     User?     @relation("UserReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
+  referredUsers  User[]    @relation("UserReferrals")
+  /** Calendar month of last automatic +30 coin grant (year*100+month). */
+  lastMonthlyCoinPeriod Int?
+  xpTotal      Int       @default(0)
+  streakDays   Int       @default(0)
+  lastActiveAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  intents            LearningIntent[]
+  roadmaps           Roadmap[]
+  taskProgress       UserTaskProgress[]
+  userAchievements   UserAchievement[]
+  follows            UserFollow[] @relation("UserFollows")
+  followedBy         UserFollow[] @relation("UserFollowedBy")
+  feedComments       FeedComment[]
+}
+
+/** Threaded discussion on a public feed item (lesson completion or badge). */
+model FeedComment {
+  id          String              @id @default(cuid())
+  targetKind  FeedActivityTarget
+  /** `UserTaskProgress.id` or `UserAchievement.id` depending on targetKind. */
+  targetId    String
+  authorId    String
+  author      User                @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body        String              @db.VarChar(4000)
+  /** Optional [{ roadmapId, taskId, title }] — lessons owned by the author, validated on write. */
+  lessonRefs  Json?
+  createdAt   DateTime            @default(now())
+
+  @@index([targetKind, targetId, createdAt])
+  @@index([authorId])
+}
+
+/** Directed follow: follower follows `following`. */
+model UserFollow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  follower    User     @relation("UserFollows", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("UserFollowedBy", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model LearningIntent {
+  id              String     @id @default(cuid())
+  userId          String
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topicTitle      String
+  topicNormalized String
+  /** Generic bucket for cross-learner matching (not the personalized roadmap title). */
+  topicClusterKey String     @default("general")
+  userGoal        String?    @db.Text
+  sourceType      SourceType
+  sourceContent   String     @db.Text
+  sourceFileName  String?
+  targetLanguage  String     @default("en")
+  experienceLevel String?
+  roadmap         Roadmap?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@index([userId, topicNormalized])
+}
+
+model Roadmap {
+  id               String         @id @default(cuid())
+  userId           String
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  learningIntentId String?        @unique
+  learningIntent   LearningIntent? @relation(fields: [learningIntentId], references: [id], onDelete: SetNull)
+  /** When set, this roadmap was started as a follow-up to another completed journey. */
+  continuedFromRoadmapId String?
+  continuedFromRoadmap   Roadmap?  @relation("RoadmapContinuation", fields: [continuedFromRoadmapId], references: [id], onDelete: SetNull)
+  continuationChildren   Roadmap[] @relation("RoadmapContinuation")
+  /** Cached AI continuation options (JSON: `{ "rows": [...] }`) after full completion. */
+  continuationSuggestionsJson Json?
+  /**
+   * When this roadmap was started from a parent’s “what’s next” row, matches that row’s signature
+   * (hash of nextFocus + buildsOn + rationale + depth). Parent id is continuedFromRoadmapId.
+   */
+  continuationSignature String?
+  /** Snapshot of the chosen continuation row (for display / debugging). */
+  continuationPick        Json?
+  title            String
+  description      String?        @db.Text
+  goal             String?        @db.Text
+  estDurationLabel String?
+  language         String         @default("en")
+  status           RoadmapStatus  @default(ACTIVE)
+  phases           RoadmapPhase[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([continuedFromRoadmapId])
+  @@index([continuedFromRoadmapId, continuationSignature])
+}
+
+model RoadmapPhase {
+  id        String        @id @default(cuid())
+  roadmapId String
+  roadmap   Roadmap       @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  title     String
+  summary   String?       @db.Text
+  order     Int
+  tasks     RoadmapTask[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([roadmapId, order])
+}
+
+model RoadmapTask {
+  id                String             @id @default(cuid())
+  phaseId           String
+  phase             RoadmapPhase       @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  title             String
+  explanation       String?            @db.Text
+  whyMatters        String?            @db.Text
+  /** Concrete read-map and pitfalls — not just "open the link". */
+  mentorPerspective String?            @db.Text
+  instructions      String?            @db.Text
+  order        Int
+  xpReward     Int                @default(25)
+  resources    TaskResource[]
+  evaluation   TaskEvaluation?
+  progress     UserTaskProgress[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([phaseId, order])
+}
+
+model TaskResource {
+  id     String      @id @default(cuid())
+  taskId String
+  task   RoadmapTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  title  String
+  url    String?
+  type   String      @default("link")
+  order  Int         @default(0)
+}
+
+model TaskEvaluation {
+  id                    String      @id @default(cuid())
+  taskId                String      @unique
+  task                  RoadmapTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  summary               String?     @db.Text
+  /** @deprecated Legacy honor-system checklist; retained for old rows. */
+  checklist             String[]    @default([])
+  /** Multiple-choice self-check: JSON array of { question, choices[], correctIndex }. */
+  quizQuestions         Json?
+  checkpointDescription String?     @db.Text
+}
+
+model UserTaskProgress {
+  id          String            @id @default(cuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId      String
+  task        RoadmapTask       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  status      TaskProgressState @default(LOCKED)
+  /** Private scratchpad / reflection — not shown on the feed. */
+  notes       String?           @db.Text
+  /** Optional short message shown on the public feed when the profile is public. */
+  feedCaption String?           @db.VarChar(2000)
+  completedAt DateTime?
+  /** Total quiz submissions (for analytics). */
+  quizSubmissionCount Int       @default(0)
+  /** Submissions that did not pass (for analytics / retry patterns). */
+  quizFailCount       Int       @default(0)
+  quizPassedAt        DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([userId, taskId])
+  @@index([userId])
+}
+
+model Achievement {
+  id          String            @id @default(cuid())
+  slug        String            @unique
+  title       String
+  description String
+  xpBonus     Int               @default(0)
+  icon        String?
+  users       UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  earnedAt      DateTime    @default(now())
+
+  @@unique([userId, achievementId])
+}
