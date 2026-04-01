@@ -1,3 +1,5 @@
+import type { TopicClusterKey } from "@/lib/topic-cluster";
+
 export type RoadmapDepth = "shallow" | "standard" | "deep";
 
 export type SourceType = "LINK" | "PDF" | "TEXT";
@@ -138,7 +140,13 @@ export type GeneratedTask = {
   mentorPerspective: string;
   /** Markdown; steps read best with short paragraphs or bullet lists. */
   instructions: string;
+  /** One app topic-cluster bucket best describing this lesson’s primary focus. */
+  lessonCategory: TopicClusterKey;
+  /** 0–3 curated skill tags (snake_case slugs) for skill-track achievements; empty if not applicable. */
+  achievementKeys: string[];
   xpReward: number;
+  /** Active minutes for this lesson (reading, hands-on, quiz)—set at generation time. */
+  estimatedMinutes: number;
   resources: GeneratedResource[];
   evaluation: GeneratedEvaluation;
 };
@@ -159,7 +167,14 @@ export type GeneratedRoadmap = {
 };
 
 /** Mock / template roadmaps before `mentorPerspective` is filled in. */
-export type GeneratedTaskDraft = Omit<GeneratedTask, "mentorPerspective">;
+export type GeneratedTaskDraft = Omit<
+  GeneratedTask,
+  "mentorPerspective" | "lessonCategory" | "achievementKeys" | "estimatedMinutes"
+> & {
+  lessonCategory?: TopicClusterKey;
+  achievementKeys?: string[];
+  estimatedMinutes?: number;
+};
 export type GeneratedPhaseDraft = Omit<GeneratedPhase, "tasks"> & {
   tasks: GeneratedTaskDraft[];
 };

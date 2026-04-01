@@ -282,6 +282,8 @@
     "view": "Ouvrir",
     "continue": "Continuer",
     "latestJourney": "Dernier · reprendre ici",
+    "featuredJourneyTasksOnly": "{done}/{total} tâches",
+    "featuredJourneyPlanEstimate": "Plan d’origine : {estimate}",
     "allJourneys": "Tous les parcours",
     "tasksLabel": "{count, plural, one {# tâche} other {# tâches}}",
     "navMenu": "Menu",
@@ -302,12 +304,13 @@
   },
   "AchievementsPage": {
     "title": "Succès",
-    "subtitle": "Gagnez des XP et badges en avançant dans les tâches et phases. Cartes illustrées à venir — emoji temporaire.",
+    "subtitle": "Gagnez des XP et des paliers en terminant des leçons par domaine et compétence. Les paliers I–III indiquent la profondeur sur chaque voie.",
     "backDashboard": "Retour au tableau de bord",
     "collectionProgress": "Collection",
     "unlocked": "débloqués",
     "stateUnlocked": "Obtenu",
     "stateLocked": "Verrouillé",
+    "tierLegend": "Niveau d’étape",
     "earnedOn": "Obtenu le {date}",
     "artworkPlaceholder": "Visuel du badge",
     "artworkHint": "Graphisme personnalisé plus tard — emoji provisoire."

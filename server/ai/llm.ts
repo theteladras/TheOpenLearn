@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { resolveTaskEstimatedMinutes } from "@/lib/lesson-time-estimate";
+import { normalizeTaskAchievementKeysExtended } from "@/lib/task-achievement-keys";
+import { normalizeClusterKey } from "@/lib/topic-cluster";
 import type {
   ContinuationSuggestionRow,
   GeneratedRoadmap,
@@ -44,10 +47,41 @@ const sourceAnalysisResultSchema = z.object({
   clarification: clarificationSchema,
 });
 
+/**
+ * Many chat models return multi-block text as `string[]`; our schema expects one markdown string.
+ */
+function normalizeModelString(val: unknown): string {
+  if (val === null || val === undefined) return "";
+  if (typeof val === "string") return val;
+  if (typeof val === "number" || typeof val === "boolean") return String(val);
+  if (Array.isArray(val)) {
+    return val
+      .map((x) => normalizeModelString(x))
+      .filter((s) => s.length > 0)
+      .join("\n\n");
+  }
+  return "";
+}
+
+/** z.string() after collapsing string | string[] | number from model JSON. */
+const modelString = z.preprocess(
+  (val) => normalizeModelString(val),
+  z.string(),
+);
+
 const generatedResourceSchema = z.object({
-  title: z.string(),
-  url: z.string().optional(),
-  type: z.string(),
+  title: modelString,
+  url: z
+    .preprocess((val) => {
+      if (val === undefined || val === null || val === "") return undefined;
+      if (Array.isArray(val)) {
+        const s = val.find((x) => typeof x === "string" && x.trim().length > 0);
+        return s ? String(s).trim() : undefined;
+      }
+      const s = normalizeModelString(val);
+      return s || undefined;
+    }, z.string().optional()),
+  type: modelString,
 });
 
 /** Pad thin model output so MCQs always have ≥2 options (UI + grading expect that). */
@@ -62,15 +96,18 @@ function normalizeQuizChoices(choices: string[]): string[] {
 
 const quizQuestionSchema = z
   .object({
-    question: z.string().min(1),
+    question: z.preprocess((v) => normalizeModelString(v), z.string().min(1)),
     choices: z
-      .array(z.string())
+      .array(z.union([z.string(), z.array(z.string())]))
       .transform((raw) =>
         normalizeQuizChoices(
-          raw.filter((c): c is string => typeof c === "string"),
+          raw.flatMap((c) => (Array.isArray(c) ? c : [c])).filter(
+            (c): c is string => typeof c === "string",
+          ),
         ),
       ),
-    correctIndex: z.number().int().min(0),
+    /** Models sometimes emit string indices; coerce before range check. */
+    correctIndex: z.coerce.number().int().min(0),
   })
   .superRefine((q, ctx) => {
     if (q.correctIndex >= q.choices.length) {
@@ -83,37 +120,82 @@ const quizQuestionSchema = z
   });
 
 const generatedEvaluationSchema = z.object({
-  summary: z.string(),
+  summary: modelString,
   /** 1–5 MCQs per task; count is model-chosen (prompt asks for variety across tasks). */
   quiz: z.array(quizQuestionSchema).min(1).max(5),
-  checkpointDescription: z.string(),
+  checkpointDescription: modelString,
 });
 
 const generatedTaskSchema = z.object({
-  title: z.string(),
-  explanation: z.string(),
-  whyMatters: z.string(),
-  mentorPerspective: z.string(),
-  instructions: z.string(),
-  xpReward: z.number(),
+  title: modelString,
+  explanation: modelString,
+  whyMatters: modelString,
+  mentorPerspective: modelString,
+  instructions: modelString,
+  lessonCategory: z
+    .preprocess(
+      (val) =>
+        val === undefined || val === null ? undefined : normalizeModelString(val),
+      z.string().optional(),
+    )
+    .transform((s) => normalizeClusterKey(s)),
+  achievementKeys: z
+    .array(z.string())
+    .max(3)
+    .optional()
+    .transform((arr) =>
+      normalizeTaskAchievementKeysExtended(arr ?? [], 3),
+    ),
+  xpReward: z.coerce.number(),
+  /** Optional; string numerics allowed; invalid/absent → undefined (filled later). */
+  estimatedMinutes: z
+    .union([z.number(), z.string()])
+    .optional()
+    .transform((v) => {
+      if (v === undefined) return undefined;
+      const n = typeof v === "string" ? Number(v.trim()) : v;
+      if (!Number.isFinite(n)) return undefined;
+      const r = Math.round(n);
+      if (r < 10 || r > 400) return undefined;
+      return r;
+    }),
   resources: z.array(generatedResourceSchema),
   evaluation: generatedEvaluationSchema,
 });
 
 const generatedPhaseSchema = z.object({
-  title: z.string(),
-  summary: z.string(),
+  title: modelString,
+  summary: modelString,
   tasks: z.array(generatedTaskSchema),
 });
 
 const generatedRoadmapSchema = z.object({
-  title: z.string(),
-  description: z.string(),
-  goal: z.string(),
-  estDurationLabel: z.string(),
-  language: z.string(),
+  title: modelString,
+  description: modelString,
+  goal: modelString,
+  estDurationLabel: modelString,
+  language: modelString,
   phases: z.array(generatedPhaseSchema).min(1),
 });
+
+type ParsedGeneratedRoadmap = z.infer<typeof generatedRoadmapSchema>;
+
+function withResolvedLessonTimes(roadmap: ParsedGeneratedRoadmap): GeneratedRoadmap {
+  return {
+    ...roadmap,
+    phases: roadmap.phases.map((ph) => ({
+      ...ph,
+      tasks: ph.tasks.map((t) => ({
+        ...t,
+        estimatedMinutes: resolveTaskEstimatedMinutes(
+          t.estimatedMinutes,
+          t.xpReward,
+          t.evaluation.quiz.length,
+        ),
+      })),
+    })),
+  };
+}
 
 export const continuationSuggestionsSchema = z.object({
   rows: z
@@ -147,7 +229,10 @@ function parseJson<S extends z.ZodType>(
   try {
     parsed = JSON.parse(text);
   } catch {
-    throw new Error(`${label}: model did not return valid JSON.`);
+    const tail = text.slice(-120).replace(/\s+/g, " ");
+    throw new Error(
+      `${label}: model did not return valid JSON (response may be truncated — try a smaller roadmap depth or raise OPENAI_MAX_OUTPUT_TOKENS). End of payload: …${tail}`,
+    );
   }
   const result = schema.safeParse(parsed);
   if (!result.success) {
@@ -177,6 +262,13 @@ async function openaiComplete(
   };
   if (jsonObject) {
     body.response_format = { type: "json_object" };
+    /**
+     * Roadmaps can be large (many phases × long lesson text). Without an explicit
+     * budget, the API default may truncate mid-JSON and break parsing.
+     * Override with OPENAI_MAX_OUTPUT_TOKENS if your model caps lower.
+     */
+    const cap = Number(process.env.OPENAI_MAX_OUTPUT_TOKENS?.trim());
+    body.max_tokens = Number.isFinite(cap) && cap > 0 ? Math.min(cap, 16_384) : 16_384;
   }
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -266,6 +358,149 @@ async function completeJson(
   );
 }
 
+async function completePlainOpenAI(messages: ChatMessage[]): Promise<string> {
+  return openaiComplete(messages, false);
+}
+
+async function anthropicCompleteChat(
+  system: string,
+  messages: Array<{ role: "user" | "assistant"; content: string }>,
+): Promise<string> {
+  const key = process.env.ANTHROPIC_API_KEY?.trim();
+  if (!key) {
+    throw new Error(
+      "ANTHROPIC_API_KEY is not set. Add it to .env or set AI_PROVIDER=mock.",
+    );
+  }
+  const model =
+    process.env.ANTHROPIC_MODEL?.trim() || "claude-3-5-haiku-20241022";
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 4096,
+      system,
+      messages,
+    }),
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(
+      `Anthropic API error (${res.status}): ${t.slice(0, 400)}`,
+    );
+  }
+  const data = (await res.json()) as {
+    content?: Array<{ type?: string; text?: string }>;
+  };
+  const parts = data.content?.filter((b) => b.type === "text") ?? [];
+  const text = parts.map((b) => b.text ?? "").join("");
+  if (!text.trim()) {
+    throw new Error("Anthropic returned an empty response.");
+  }
+  return text;
+}
+
+const TASK_COACH_SYSTEM = `You are a patient, practical learning coach for ONE lesson inside a larger roadmap. Use only the task context provided. If something is not in context, say so briefly and give a sensible general learning tip.
+
+Rules:
+- Answer concisely (about 2–6 short paragraphs or a tight bullet list) unless the learner asks for more depth.
+- Do not quote or reveal multiple-choice quiz questions or correct answers—help them understand ideas so they can answer themselves.
+- Markdown is fine when useful (**bold**, short lists, \`code\` for identifiers).
+- If they are stuck on steps, tie guidance to the instructions and resources named in context.
+- Tone: clear, encouraging, not preachy.`;
+
+export type TaskCoachLLMInput = {
+  roadmapTitle: string;
+  /** Normalized topic-cluster key for this lesson (or journey fallback). */
+  lessonCategory: string;
+  /** Skill-track tags shown on the lesson (e.g. react). */
+  achievementKeys: string[];
+  taskTitle: string;
+  explanation: string | null;
+  whyMatters: string | null;
+  mentorPerspective: string | null;
+  instructions: string | null;
+  resourcesLines: string;
+  evaluationSummary: string | null;
+  checkpointDescription: string | null;
+  quizPassed: boolean;
+  priorMessages: { role: "user" | "assistant"; content: string }[];
+  newQuestion: string;
+};
+
+export async function coachTaskWithProvider(
+  provider: "openai" | "anthropic",
+  input: TaskCoachLLMInput,
+): Promise<string> {
+  const skillLine =
+    input.achievementKeys.length > 0 ?
+      input.achievementKeys.join(", ")
+    : "(none — generic lesson)";
+  const ctxParts = [
+    `Roadmap: ${input.roadmapTitle}`,
+    `Lesson category (subject bucket): ${input.lessonCategory}`,
+    `Skill / stack tags (achievement tracks): ${skillLine}`,
+    `Task: ${input.taskTitle}`,
+    input.quizPassed ?
+      "Learner has passed this task's self-check quiz."
+    : "Learner has not passed the self-check yet (do not give quiz answers).",
+    "",
+    "## Overview",
+    input.explanation?.trim() || "(none)",
+    "",
+    "## Why this matters",
+    input.whyMatters?.trim() || "(none)",
+    "",
+    "## From your guide",
+    input.mentorPerspective?.trim() || "(none)",
+    "",
+    "## Instructions",
+    input.instructions?.trim() || "(none)",
+    "",
+    "## Resources",
+    input.resourcesLines.trim() || "(none listed)",
+    "",
+    "## Self-check summary (not the questions)",
+    input.evaluationSummary?.trim() || "(none)",
+    "",
+    "## Checkpoint / extra hints",
+    input.checkpointDescription?.trim() || "(none)",
+  ];
+  const contextBlock = truncateMiddle(ctxParts.join("\n"), 14_000);
+  const system = `${TASK_COACH_SYSTEM}\n\n---\nTASK CONTEXT:\n${contextBlock}`;
+
+  const prior = input.priorMessages.map((m) => ({
+    role: m.role,
+    content: m.content.slice(0, 12_000),
+  }));
+  const userMsg = input.newQuestion.trim().slice(0, 4000);
+  if (!userMsg) {
+    throw new Error("Task coach: empty question.");
+  }
+
+  if (provider === "openai") {
+    const messages: ChatMessage[] = [
+      { role: "system", content: system },
+      ...prior.map(
+        (m): ChatMessage => ({ role: m.role, content: m.content }),
+      ),
+      { role: "user", content: userMsg },
+    ];
+    return completePlainOpenAI(messages);
+  }
+
+  const anthMessages: Array<{ role: "user" | "assistant"; content: string }> = [
+    ...prior,
+    { role: "user", content: userMsg },
+  ];
+  return anthropicCompleteChat(system, anthMessages);
+}
+
 const ANALYSIS_SYSTEM = `You are an expert learning designer. Given a learner's source material (link text, pasted notes, or upload summary), you propose one or more focused learning journeys.
 
 Return a single JSON object with this shape:
@@ -313,7 +548,7 @@ Return ONLY JSON with this exact structure:
   "title": "string",
   "description": "2–4 sentences markdown OK",
   "goal": "single outcome sentence",
-  "estDurationLabel": "human estimate e.g. 2–3 weeks · ~5 hrs/week",
+  "estDurationLabel": "human estimate e.g. 2–3 weeks · ~5 hrs/week (must match task scope; see Rules)",
   "language": "BCP-47 code",
   "phases": [
     {
@@ -326,7 +561,10 @@ Return ONLY JSON with this exact structure:
           "whyMatters": "markdown",
           "mentorPerspective": "markdown — 2–4 short paragraphs as an expert coach: name specific doc areas/sections when the source is a well-known site (e.g. Vercel: Projects, env vars, deployments); what to skim vs read deeply; one common pitfall; what 'done' looks like. Never only say 'visit the link' without this substance.",
           "instructions": "markdown — concrete hands-on steps only; learners already have concepts and examples from explanation",
+          "lessonCategory": "general | mathematics | life-sciences | physical-sciences | computing | technology | design | languages | business | arts-humanities | health-wellbeing",
+          "achievementKeys": ["0–3 snake_case skill slugs, or []"],
           "xpReward": 30,
+          "estimatedMinutes": 60,
           "resources": [ { "title": "string", "url": "https optional", "type": "link|doc|video|other" } ],
           "evaluation": {
             "summary": "markdown — one short line framing the self-check",
@@ -348,12 +586,17 @@ Return ONLY JSON with this exact structure:
 The JSON skeleton shows one quiz item for brevity only; each real task’s evaluation.quiz array must contain **between 1 and 5** full question objects following the rules below (length varies per task).
 
 Rules:
+- estimatedMinutes (required on every task): integer **active learning minutes** for one focused sitting—reading the Overview, executing instructions (including typing/building), using resources as implied, and finishing the quiz. Judge pace using the learner’s **difficulty** and **readingLevel** from the input understanding. Bands (flexible): tight checkpoint **20–40**; typical lesson **40–95**; dense, multi-part, or capstone **95–200**. Minutes must rise with real heft: longer teaching in explanation, more instruction steps, more quiz items, and higher xpReward should all push the number up—not a flat constant across tasks.
+- Cross-check: Sum all task **estimatedMinutes**. That total (total active minutes) should be broadly consistent with **estDurationLabel** when interpreted as committed learning time (e.g. “~5 hrs/week for 3 weeks” ≈ **900** active minutes—your per-task sums should land in the same order of magnitude unless the label deliberately emphasizes calendar spread over seat time; if so, say so in the label).
+- estDurationLabel: Choose weeks and hrs/week so their product fits the real scope of THIS roadmap’s phases and tasks. Very small roadmaps (e.g. a few compact tasks) should use shorter timelines at typical weekly hours; deep roadmaps with many substantial tasks need proportionally more. Never reuse example numbers when they disagree with how large or small the task list is.
 - Phase and task counts MUST follow roadmapDepth from the input understanding (not one-size-fits-all):
   - shallow: 2–3 phases, 2–4 tasks per phase.
   - standard: 4–6 phases, 3–5 tasks per phase.
   - deep: 6–10 phases, 4–7 tasks per phase when the subject is a large framework, language, or doc site; otherwise 5–8 phases, 3–6 tasks per phase.
 - Each task must be actionable. Name specific doc pages, guides, or concepts where the source is a well-known site.
 - xpReward: integers 20–70 typical; boss tasks up to 90.
+- lessonCategory (required on every task): pick exactly ONE bucket for that task’s primary skill—general, mathematics, life-sciences, physical-sciences, computing, technology, design, languages, business, arts-humanities, health-wellbeing. Use the best fit for the lesson itself (tasks in the same roadmap may differ, e.g. one “setup IDE” → computing, one “study chord progressions” → arts-humanities).
+- achievementKeys (required on every task): JSON array of **0 to 3** lowercase **snake_case** strings (letters, digits, underscore; must start with a letter), each naming one concrete skill practiced **in this task**. Prefer known tags when they fit: react, nextjs, vue, svelte, angular, javascript, typescript, html_css, tailwindcss, nodejs, python, rust, go, java, csharp, sql, graphql, docker, kubernetes, aws, figma, music_theory, writing, public_speaking, data_analysis, machine_learning. If the lesson centers on another stack (e.g. kotlin, swiftui, postgres), you may use a **new** slug matching that pattern (the app will register milestones automatically). Use [] when the lesson is broad or not tied to a specific track—do not add vague tags.
 - Tie tasks to the supplied source and understanding; cite URLs from the source when present.
 - Every task MUST include mentorPerspective with real navigational and conceptual guidance (not generic filler).
 - evaluation.quiz: **1–5** question objects per task. **Vary the array length across tasks** in the roadmap—do not use the same count for every task (never “always two”). Use **1** for a narrow or warmup checkpoint; **2–3** for a typical lesson task; **4–5** when the task synthesizes several concepts or roadmapDepth is deep. Each question: one unambiguous correctIndex; at least two distinct choices; stems and distractors specific to this task—no generic literacy fluff.
@@ -362,11 +605,16 @@ Rules:
 Pedagogy — explanation field (Overview) for EVERY task, all subjects:
 - This is the primary teaching block. Never replace it with a single sentence, a restatement of the title only, or vague filler.
 - Define the core ideas, jargon, or constructs the task title and instructions depend on (e.g. if the task is about “components”, “entropy”, or “JOIN”, explain what that means in this context before expecting the learner to act).
+- Depth floor: the Overview should read as a **real mini-lesson**—substantially more than two short paragraphs. For **standard** or **deep** roadmapDepth, prefer **4–8** short sections or well-developed blocks (headings, lists, example) so a newcomer can study only this field and grasp the task.
 - Include at least one concrete illustration:
   - Programming / CLI / configs / data formats: add a minimal, correct example in a markdown fenced code block with a language tag (the learner should see working-shaped code or commands, not only prose).
   - Non-code domains: add a short worked example, numeric sketch, comparison table, or precise analogy—something the learner can anchor to, not platitudes.
+- Add **Common misconceptions** or **Watch out** (short) when learners often get this wrong—skip only if the task is truly trivial.
 - Use brief markdown structure when it helps: e.g. short headings (**What is X?**, **Example**, **How this ties to your task**).
 - Aim for enough depth that someone new to this task could read only the Overview and understand what they are doing and why—without repeating the entire instructions section.
+- **whyMatters**: minimum **two sentences** that tie this step to the journey outcome—no one-line platitudes.
+- **instructions**: concrete procedural steps only. For **standard** or **deep** journeys, prefer **4–10** numbered or bulleted steps unless the task is an intentional micro-checkpoint (then fewer is OK, but state the quick win clearly).
+- **mentorPerspective**: for **deep** roadmaps, be extra explicit—name doc sections, compare approaches, note tradeoffs, and spell out what “done” looks like.
 - instructions should stay procedural (step list); do not move all teaching into instructions—keep conceptual teaching in explanation.
 `;
 
@@ -511,6 +759,7 @@ export async function generateRoadmapWithProvider(
       userBits,
       "",
       "Per task, set evaluation.quiz to 1–5 questions and vary the count across tasks (mix of 1s, 2s, 3s, and occasional 4–5 for dense or capstone steps). Avoid giving every task the same number of questions.",
+      "Every task object MUST include estimatedMinutes (integer, see Rules).",
     ].join("\n"),
   );
   const parsed = parseJson(raw, generatedRoadmapSchema, "Roadmap generation");
@@ -520,14 +769,15 @@ export async function generateRoadmapWithProvider(
   const scoped = input.scopeSuggestion
     ? `${parsed.description}\n\nScope focus: ${input.scopeSuggestion}`
     : parsed.description;
+  const resolved = withResolvedLessonTimes(parsed);
   return {
-    ...parsed,
-    language: input.recommendedLanguage || parsed.language,
-    goal: input.targetOutcome || parsed.goal,
+    ...resolved,
+    language: input.recommendedLanguage || resolved.language,
+    goal: input.targetOutcome || resolved.goal,
     title:
-      input.interpretedSubject !== parsed.title
+      input.interpretedSubject !== resolved.title
         ? `${input.interpretedSubject}: structured path`
-        : parsed.title,
+        : resolved.title,
     description: `${descLead}${scoped}`.trim(),
   };
 }

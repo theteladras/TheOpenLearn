@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Check, Circle, Lock } from "lucide-react";
+import { Check, Circle, Clock, Lock } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 type TaskProgressState = "LOCKED" | "AVAILABLE" | "COMPLETED";
@@ -13,12 +13,17 @@ import {
   RoadmapContinuationPanel,
 } from "./roadmap-continuation-panel";
 import { RoadmapOverview } from "./roadmap-overview";
+import { TaskAchievementChips } from "./task-achievement-chips";
 
 export type RoadmapViewTask = {
   id: string;
   title: string;
   status: TaskProgressState;
   order: number;
+  /** Skill-track tags from generation (e.g. react). */
+  achievementKeys: string[];
+  /** Resolved active-time estimate (minutes). */
+  lessonTimeMinutes: number;
 };
 
 export type RoadmapViewPhase = {
@@ -35,6 +40,10 @@ type Props = {
   goal: string | null;
   description: string | null;
   estDurationLabel: string | null;
+  /** Sum of per-lesson active time estimates (minutes). */
+  totalLessonMinutes: number;
+  /** Same total as hours, one decimal when useful. */
+  activeTimeHoursRounded: number;
   phases: RoadmapViewPhase[];
   continuedFrom?: { id: string; title: string } | null;
 };
@@ -45,10 +54,13 @@ export function RoadmapView({
   goal,
   description,
   estDurationLabel,
+  totalLessonMinutes,
+  activeTimeHoursRounded,
   phases,
   continuedFrom,
 }: Props) {
   const t = useTranslations("Roadmap");
+  const tTask = useTranslations("Task");
 
   let total = 0;
   let done = 0;
@@ -67,6 +79,17 @@ export function RoadmapView({
         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
         {estDurationLabel && (
           <p className="mt-1 text-sm text-[var(--muted)]">{estDurationLabel}</p>
+        )}
+        {totalLessonMinutes > 0 && (
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-[var(--muted)]">
+            <Clock className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+            <span>
+              {t("activeTimeTotal", {
+                minutes: totalLessonMinutes,
+                hours: activeTimeHoursRounded,
+              })}
+            </span>
+          </p>
         )}
       </div>
 
@@ -164,9 +187,21 @@ export function RoadmapView({
                               <Lock className="h-4 w-4 text-[var(--muted)]" />
                             )}
                           </div>
-                          <CardTitle className="text-base font-medium leading-snug">
-                            {task.title}
-                          </CardTitle>
+                          <div className="min-w-0 space-y-2">
+                            <CardTitle className="text-base font-medium leading-snug">
+                              {task.title}
+                            </CardTitle>
+                            <p className="flex items-center gap-1 text-xs text-[var(--muted)]">
+                              <Clock className="h-3 w-3 shrink-0 opacity-70" />
+                              {tTask("lessonTime", {
+                                minutes: task.lessonTimeMinutes,
+                              })}
+                            </p>
+                            <TaskAchievementChips
+                              keys={task.achievementKeys}
+                              label={t("achievementTracks")}
+                            />
+                          </div>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
                           <Badge

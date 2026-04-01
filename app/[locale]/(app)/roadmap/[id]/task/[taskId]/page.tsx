@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
 import { getOrCreateAppUser } from "@/lib/auth-user";
+import { skipsCoinEconomy } from "@/lib/coin-economy";
 import { prisma } from "@/lib/db";
+import { resolveTaskEstimatedMinutes } from "@/lib/lesson-time-estimate";
+import { parseTaskQuizQuestions } from "@/lib/task-quiz";
 import { TaskDetail } from "@/features/roadmap/task-detail";
 
 type Props = {
@@ -27,10 +30,19 @@ export default async function TaskPage({ params }: Props) {
 
   const progress = task.progress[0];
   const status = progress?.status ?? "LOCKED";
+  const quizLen = parseTaskQuizQuestions(
+    task.evaluation?.quizQuestions ?? null,
+  ).length;
+  const lessonTimeMinutes = resolveTaskEstimatedMinutes(
+    task.estimatedMinutes,
+    task.xpReward,
+    quizLen,
+  );
 
   return (
     <TaskDetail
       roadmapId={roadmapId}
+      coachChargePerMessage={!skipsCoinEconomy(user.plan)}
       task={{
         id: task.id,
         title: task.title,
@@ -53,6 +65,8 @@ export default async function TaskPage({ params }: Props) {
         quizSubmissionCount: progress?.quizSubmissionCount ?? 0,
         quizFailCount: progress?.quizFailCount ?? 0,
         quizPassedAt: progress?.quizPassedAt?.toISOString() ?? null,
+        achievementKeys: task.achievementKeys,
+        lessonTimeMinutes,
       }}
     />
   );

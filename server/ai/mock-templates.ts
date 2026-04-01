@@ -1,3 +1,6 @@
+import type { TaskAchievementKey } from "@/lib/task-achievement-keys";
+import { resolveTaskEstimatedMinutes } from "@/lib/lesson-time-estimate";
+import { inferTopicCluster } from "@/lib/topic-cluster";
 import type {
   ContinuationSuggestionRow,
   GeneratedRoadmap,
@@ -8,6 +11,50 @@ import type {
   UnderstandingInput,
   UnderstandingResult,
 } from "@/types/ai";
+
+function inferAchievementKeysFromTask(t: {
+  title: string;
+  instructions: string;
+  resources: { url?: string; title: string }[];
+}): string[] {
+  const blob = `${t.title} ${t.instructions} ${t.resources.map((r) => `${r.url ?? ""} ${r.title}`).join(" ")}`.toLowerCase();
+  const out: string[] = [];
+  const add = (k: TaskAchievementKey) => {
+    if (!out.includes(k) && out.length < 3) out.push(k);
+  };
+  const has = (re: RegExp) => re.test(blob);
+
+  if (has(/\breact\b|react\.dev|\bjsx\b/) && !has(/\breactive\b/)) add("react");
+  if (has(/next\.js|nextjs|nextjs\.org/)) add("nextjs");
+  if (has(/\bvue\b|vuejs/)) add("vue");
+  if (has(/\bsvelte\b|sveltekit/)) add("svelte");
+  if (has(/\bangular\b/)) add("angular");
+  if (has(/\bjavascript\b|\bjs\b|ecmascript|mdn.*js/)) add("javascript");
+  if (has(/\btypescript\b|\bts\b|\.tsx\b/)) add("typescript");
+  if (has(/\bhtml\b|\bcss\b|web fundamentals/)) add("html_css");
+  if (has(/\btailwind\b/)) add("tailwindcss");
+  if (has(/\bnode\.?js\b|\bnode\b.*npm/)) add("nodejs");
+  if (has(/\bpython\b|pypi|django|fastapi|flask/)) add("python");
+  if (has(/\brust\b|cargo\b|crates\.io/)) add("rust");
+  if (has(/\bgo\b|golang\.org/)) add("go");
+  if (has(/java(?!script)/) || has(/spring\.io/)) add("java");
+  if (has(/\bc#\b|\.net\b|csharp/)) add("csharp");
+  if (has(/\bsql\b|postgres|mysql|sqlite/) && !has(/graphql/)) add("sql");
+  if (has(/graphql/)) add("graphql");
+  if (has(/\bdocker\b|dockerfile/)) add("docker");
+  if (has(/kubernetes|\bk8s\b|helm\b/)) add("kubernetes");
+  if (has(/\baws\b|amazon web services|s3\b|lambda\b/)) add("aws");
+  if (has(/\bfigma\b/)) add("figma");
+  if (has(/\bmusic\b|chord|scale|harmony\b/) && !has(/\breact\b/))
+    add("music_theory");
+  if (has(/\bwriting\b|essay|prose\b/)) add("writing");
+  if (has(/\bspeak\b|presentation|public speak/)) add("public_speaking");
+  if (has(/\bdata\b.*analy|pandas|notebook|spreadsheet/)) add("data_analysis");
+  if (has(/machine learning|\bml\b|neural|pytorch|tensorflow\b/))
+    add("machine_learning");
+
+  return out;
+}
 
 function defaultMentorPerspective(
   title: string,
@@ -34,6 +81,21 @@ export function finalizeMockRoadmap(
       ...ph,
       tasks: ph.tasks.map((t) => ({
         ...t,
+        lessonCategory:
+          t.lessonCategory ??
+          inferTopicCluster(`${ph.title} ${draft.title}`, t.title),
+        achievementKeys:
+          t.achievementKeys ??
+          inferAchievementKeysFromTask({
+            title: t.title,
+            instructions: t.instructions,
+            resources: t.resources,
+          }),
+        estimatedMinutes: resolveTaskEstimatedMinutes(
+          t.estimatedMinutes,
+          t.xpReward,
+          t.evaluation.quiz.length,
+        ),
         mentorPerspective: defaultMentorPerspective(t.title, t.resources),
       })),
     })),
@@ -1014,6 +1076,25 @@ export function mockContinuationSuggestions(input: {
       roadmapDepth: "deep",
     },
   ];
+}
+
+/** Placeholder coach reply when AI_PROVIDER is mock. */
+export function mockTaskCoachReply(input: {
+  taskTitle: string;
+  newQuestion: string;
+}): string {
+  const preview = input.newQuestion.trim().slice(0, 220);
+  const ell =
+    input.newQuestion.trim().length > 220 ? "…" : "";
+  return [
+    `Thanks for asking about **${input.taskTitle}**.`,
+    "",
+    `_This is a **mock** coach response._ Set \`AI_PROVIDER\` to \`openai\` or \`anthropic\` in your environment for live answers.`,
+    "",
+    `**Your question:** “${preview}${ell}”`,
+    "",
+    "**Quick nudge:** Skim the lesson overview and “From your guide” again—often the next step is which resource to open first. If something specific is unclear (an error message, a definition, or one step), name it in your next message so the coach can go deeper.",
+  ].join("\n");
 }
 
 export function pickMockTemplates(topicTitle: string, sourceContent: string) {

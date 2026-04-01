@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getOrCreateAppUser } from "@/lib/auth-user";
 import { prisma } from "@/lib/db";
+import { resolveTaskEstimatedMinutes } from "@/lib/lesson-time-estimate";
 import { RoadmapView } from "@/features/roadmap/roadmap-view";
 
 type Props = { params: Promise<{ locale: string; id: string }> };
@@ -37,18 +38,32 @@ export default async function RoadmapPage({ params }: Props) {
       })
     : null;
 
+  let totalLessonMinutes = 0;
   const phases = roadmap.phases.map((ph) => ({
     id: ph.id,
     title: ph.title,
     summary: ph.summary,
     order: ph.order,
-    tasks: ph.tasks.map((task) => ({
-      id: task.id,
-      title: task.title,
-      order: task.order,
-      status: task.progress[0]?.status ?? ("LOCKED" as const),
-    })),
+    tasks: ph.tasks.map((task) => {
+      const lessonTimeMinutes = resolveTaskEstimatedMinutes(
+        task.estimatedMinutes,
+        task.xpReward,
+        0,
+      );
+      totalLessonMinutes += lessonTimeMinutes;
+      return {
+        id: task.id,
+        title: task.title,
+        order: task.order,
+        status: task.progress[0]?.status ?? ("LOCKED" as const),
+        achievementKeys: task.achievementKeys,
+        lessonTimeMinutes,
+      };
+    }),
   }));
+
+  const activeTimeHoursRounded =
+    Math.round((totalLessonMinutes / 60) * 10) / 10;
 
   return (
     <RoadmapView
@@ -57,6 +72,8 @@ export default async function RoadmapPage({ params }: Props) {
       goal={roadmap.goal}
       description={roadmap.description}
       estDurationLabel={roadmap.estDurationLabel}
+      totalLessonMinutes={totalLessonMinutes}
+      activeTimeHoursRounded={activeTimeHoursRounded}
       phases={phases}
       continuedFrom={continuedFrom}
     />

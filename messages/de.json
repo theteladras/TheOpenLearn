@@ -283,6 +283,8 @@
     "view": "Öffnen",
     "continue": "Weiter",
     "latestJourney": "Neueste · hier weitermachen",
+    "featuredJourneyTasksOnly": "{done}/{total} Aufgaben",
+    "featuredJourneyPlanEstimate": "Ursprünglicher Plan: {estimate}",
     "allJourneys": "Alle Reisen",
     "tasksLabel": "{count, plural, one {# Aufgabe} other {# Aufgaben}}",
     "navMenu": "Menü",
@@ -303,12 +305,13 @@
   },
   "AchievementsPage": {
     "title": "Erfolge",
-    "subtitle": "Verdiene XP und Abzeichen bei Aufgaben und Phasen. Illustrierte Karten folgen — Emoji sind Platzhalter.",
+    "subtitle": "Sammle XP und Stufen, wenn du Lektionen in Themenbereichen und Skills abschließt. Stufen I–III zeigen die Tiefe pro Track.",
     "backDashboard": "Zum Dashboard",
     "collectionProgress": "Sammlung",
     "unlocked": "freigeschaltet",
     "stateUnlocked": "Verdient",
     "stateLocked": "Gesperrt",
+    "tierLegend": "Meilenstein-Stufe",
     "earnedOn": "Verdient {date}",
     "artworkPlaceholder": "Abzeichen-Grafik",
     "artworkHint": "Eigenes Artwork kann später hierhin — Emoji ist Platzhalter."

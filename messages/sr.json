@@ -355,6 +355,8 @@
     "view": "Otvori",
     "continue": "Nastavi",
     "latestJourney": "Poslednje · nastavi odavde",
+    "featuredJourneyTasksOnly": "{done}/{total} zadataka",
+    "featuredJourneyPlanEstimate": "Izvorni plan: {estimate}",
     "allJourneys": "Sva putovanja",
     "tasksLabel": "{count, plural, one {# zadatak} few {# zadatka} other {# zadataka}}",
     "navMenu": "Meni",
@@ -375,12 +377,13 @@
   },
   "AchievementsPage": {
     "title": "Dostignuća",
-    "subtitle": "Skupljaj XP i značke dok napreduješ. Ilustrovane kartice dolaze — emoji su privremeni.",
+    "subtitle": "Skupljaj XP i nivoe dok završavaš lekcije u oblastima i veštinama. Nivoi I–III označavaju dubinu u svakoj stazi.",
     "backDashboard": "Nazad na tablu",
     "collectionProgress": "Kolekcija",
     "unlocked": "otključano",
     "stateUnlocked": "Osvojeno",
     "stateLocked": "Zaključano",
+    "tierLegend": "Nivo prekretnice",
     "earnedOn": "Datum: {date}",
     "artworkPlaceholder": "Ilustracija značke",
     "artworkHint": "Ovde može slika kasnije — emoji je zamenjiva oznaka."

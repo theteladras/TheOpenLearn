@@ -345,6 +345,9 @@
     "tasksThisWeekSub": "{count, plural, one {# task completed in the last 7 days} other {# tasks completed in the last 7 days}}",
     "analyticsTitle": "Analytics",
     "analyticsSummaryLine": "{overall}% overall · {learnings} active learnings · {done}/{total} tasks",
+    "analyticsLessonCategories": "Lessons by category",
+    "analyticsLessonCategoriesHint": "Each generated lesson is tagged with a subject bucket. Older lessons without a tag use your journey topic.",
+    "analyticsLessonCategoryLine": "{done}/{total} tasks done",
     "tasksDone": "Tasks completed",
     "xp": "Total XP",
     "xpAndStreak": "XP · streak",
@@ -367,6 +370,8 @@
     "view": "Open",
     "continue": "Continue",
     "latestJourney": "Latest · pick up here",
+    "featuredJourneyTasksOnly": "{done}/{total} tasks",
+    "featuredJourneyPlanEstimate": "Original plan: {estimate}",
     "allJourneys": "All journeys",
     "tasksLabel": "{count, plural, one {# task} other {# tasks}}",
     "navMenu": "Menu",
@@ -387,12 +392,13 @@
   },
   "AchievementsPage": {
     "title": "Achievements",
-    "subtitle": "Earn XP and badges as you move through tasks and phases. Illustrated cards are coming — emoji placeholders are temporary.",
+    "subtitle": "Earn XP and tiers as you complete lessons across topic areas and skill tracks. Tiers I–III mark depth in each track.",
     "backDashboard": "Back to dashboard",
     "collectionProgress": "Collection",
     "unlocked": "unlocked",
     "stateUnlocked": "Earned",
     "stateLocked": "Locked",
+    "tierLegend": "Milestone tier",
     "earnedOn": "Earned {date}",
     "artworkPlaceholder": "Badge artwork",
     "artworkHint": "Custom artwork can go here later — the emoji is a placeholder."
@@ -500,6 +506,8 @@
   "Roadmap": {
     "goal": "Learning goal",
     "duration": "Estimated duration",
+    "activeTimeTotal":
+      "~{minutes} min of focused lesson time (~{hours} h) — reading, practice, and self-checks combined.",
     "phase": "Phase",
     "tasks": "Tasks",
     "locked": "Locked",
@@ -509,6 +517,7 @@
     "howToPass": "How you pass this",
     "evaluation": "Self-check",
     "openTask": "Open task",
+    "achievementTracks": "Achievement tracks",
     "progress": "Journey progress",
     "phaseComplete": "Phase complete — nice work.",
     "overviewTitle": "Roadmap at a glance",
@@ -546,6 +555,9 @@
     "depthDeep": "Thorough"
   },
   "Task": {
+    "lessonTime": "~{minutes} min",
+    "lessonTimeHelp":
+      "Typical focused time for this lesson (reading, practice, self-check). Your pace may vary.",
     "overview": "Overview",
     "why": "Why this matters",
     "guide": "From your guide",
@@ -591,7 +603,24 @@
     "quizPickOne": "Choose one answer per question.",
     "quizLegacyNoQuiz": "This task has no self-check yet (older roadmap). You can complete it directly.",
     "completeBlockedQuiz": "Pass the self-check above first.",
-    "completeReady": "When you are happy with your work, seal the task."
+    "completeReady": "When you are happy with your work, seal the task.",
+    "coachTitle": "Ask your guide (AI)",
+    "coachCostHint": "Each message uses {n} coin on the free plan. Answers use this lesson as context.",
+    "coachProHint": "Included with Pro — unlimited coach messages for open lessons.",
+    "coachLockedHint": "Open this lesson on the roadmap to chat with your guide.",
+    "coachLockedBody": "Finish prerequisite tasks on the roadmap to unlock this coach.",
+    "coachEmpty": "Stuck on a concept or step? Ask anything about this lesson.",
+    "coachYou": "You",
+    "coachAssistant": "Guide",
+    "coachPlaceholder": "e.g. What does this term mean here? Which resource should I open first?",
+    "coachPlaceholderLocked": "Unlock this lesson to ask questions.",
+    "coachShortcut": "⌘/Ctrl + Enter to send",
+    "coachSend": "Send",
+    "coachSending": "Thinking…",
+    "coachErrorCoins": "You need at least one coin to send a message. Earn coins by learning or invite friends.",
+    "coachErrorUnavailable": "This coach is only available for lessons you can open.",
+    "coachErrorInvalid": "Could not send that message. Shorten it and try again.",
+    "coachErrorFailed": "The guide could not answer right now. You were not charged. Try again in a moment."
   },
   "Referral": {
     "title": "Invite friends",
@@ -624,7 +653,83 @@
     "roadmap_finisher": {
       "title": "Roadmap Finisher",
       "description": "Complete an entire roadmap."
+    },
+    "clusterMilestone": {
+      "once": {
+        "title": "{cluster} · First lesson",
+        "description": "Finished your first lesson in this category across your active learnings."
+      },
+      "twice": {
+        "title": "{cluster} · Two lessons",
+        "description": "Finished two lessons in this category."
+      },
+      "many": {
+        "title": "{cluster} · On a roll",
+        "description": "Finished three or more lessons in this category."
+      }
+    },
+    "skillMilestone": {
+      "once": {
+        "title": "{skill} · First lesson",
+        "description": "Finished your first lesson tagged with this skill track."
+      },
+      "twice": {
+        "title": "{skill} · Two lessons",
+        "description": "Finished two lessons tagged with this skill track."
+      },
+      "many": {
+        "title": "{skill} · On a roll",
+        "description": "Finished three or more lessons tagged with this skill track."
+      }
+    },
+    "howToSectionTitle": "How to earn this",
+    "howToDashboardCta": "Open your dashboard",
+    "howToLearnCta": "Start a new learning plan",
+    "howToFallback": "Complete lessons on your active journeys until this badge’s condition is met (see the description above).",
+    "howTo": {
+      "first_step": "On your dashboard, open any active learning and complete the next available lesson from start to finish — including the quiz if that lesson has one.",
+      "phase_crusher": "Pick one journey and finish every task in a single phase. Work through that phase until each lesson is marked complete.",
+      "consistent_learner": "Finish five separate lessons in total. They can be in different journeys; each lesson counts once when you complete it.",
+      "roadmap_finisher": "In one journey, complete every lesson in every phase — stay on the same roadmap until nothing is left to finish.",
+      "clusterMilestone": {
+        "once": "Complete one lesson whose category is “{cluster}” (each lesson shows a topic tag; analytics use the same buckets). Only lessons on active journeys count.",
+        "twice": "Complete two lessons categorized as “{cluster}” across your active journeys.",
+        "many": "Complete three or more lessons categorized as “{cluster}” across your active journeys."
+      },
+      "skillMilestone": {
+        "once": "Complete one lesson that lists “{skill}” in its skill tags on the roadmap or lesson page. Those tags match what you actually practice in that lesson.",
+        "twice": "Complete two lessons tagged with “{skill}”.",
+        "many": "Complete three or more lessons tagged with “{skill}”."
+      }
     }
+  },
+  "TaskAchievementKeys": {
+    "react": "React",
+    "nextjs": "Next.js",
+    "vue": "Vue",
+    "svelte": "Svelte",
+    "angular": "Angular",
+    "javascript": "JavaScript",
+    "typescript": "TypeScript",
+    "html_css": "HTML & CSS",
+    "tailwindcss": "Tailwind CSS",
+    "nodejs": "Node.js",
+    "python": "Python",
+    "rust": "Rust",
+    "go": "Go",
+    "java": "Java",
+    "csharp": "C#",
+    "sql": "SQL",
+    "graphql": "GraphQL",
+    "docker": "Docker",
+    "kubernetes": "Kubernetes",
+    "aws": "AWS",
+    "figma": "Figma",
+    "music_theory": "Music theory",
+    "writing": "Writing",
+    "public_speaking": "Public speaking",
+    "data_analysis": "Data analysis",
+    "machine_learning": "Machine learning"
   },
   "Common": {
     "learnMore": "Learn more",

@@ -1,40 +1,47 @@
 import { PrismaClient } from "@prisma/client";
+import { ensureAllPredefinedMilestones } from "../lib/ensure-milestone-achievements";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const rows = [
+  const core: {
+    slug: string;
+    title: string;
+    description: string;
+    xpBonus: number;
+    icon: string | null;
+  }[] = [
     {
       slug: "first_step",
       title: "First Step",
       description: "Complete your first task.",
       xpBonus: 50,
-      icon: "🎯",
+      icon: null,
     },
     {
       slug: "phase_crusher",
       title: "Phase Crusher",
       description: "Finish every task in a phase.",
       xpBonus: 100,
-      icon: "⚡",
+      icon: null,
     },
     {
       slug: "consistent_learner",
       title: "Consistent Learner",
       description: "Stay active across multiple sessions.",
       xpBonus: 75,
-      icon: "🔥",
+      icon: null,
     },
     {
       slug: "roadmap_finisher",
       title: "Roadmap Finisher",
       description: "Complete an entire roadmap.",
       xpBonus: 500,
-      icon: "🏆",
+      icon: null,
     },
   ];
 
-  for (const row of rows) {
+  for (const row of core) {
     await prisma.achievement.upsert({
       where: { slug: row.slug },
       create: row,
@@ -46,6 +53,8 @@ async function main() {
       },
     });
   }
+
+  await ensureAllPredefinedMilestones();
 
   console.log("Seeded achievements.");
 }

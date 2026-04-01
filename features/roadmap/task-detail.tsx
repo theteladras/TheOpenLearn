@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { ChevronDown, Clock, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -24,6 +24,8 @@ import {
   saveTaskNotes,
   submitTaskQuiz,
 } from "@/server/actions/learning-actions";
+import { TaskCoachChat } from "@/features/roadmap/task-coach-chat";
+import { TaskAchievementChips } from "@/features/roadmap/task-achievement-chips";
 import { cn } from "@/lib/utils";
 
 const writingsSchema = z.object({
@@ -40,6 +42,8 @@ type Evaluation = {
 
 type Props = {
   roadmapId: string;
+  /** Free users pay per coach message; PRO does not. */
+  coachChargePerMessage: boolean;
   task: {
     id: string;
     title: string;
@@ -56,10 +60,16 @@ type Props = {
     quizSubmissionCount: number;
     quizFailCount: number;
     quizPassedAt: string | null;
+    achievementKeys: string[];
+    lessonTimeMinutes: number;
   };
 };
 
-export function TaskDetail({ roadmapId, task }: Props) {
+export function TaskDetail({
+  roadmapId,
+  coachChargePerMessage,
+  task,
+}: Props) {
   const router = useRouter();
   const t = useTranslations("Task");
   const tRoad = useTranslations("Roadmap");
@@ -272,7 +282,22 @@ export function TaskDetail({ roadmapId, task }: Props) {
         )}
       </div>
 
-      <h1 className="text-2xl font-semibold tracking-tight">{task.title}</h1>
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight">{task.title}</h1>
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[var(--muted)]">
+          <span className="inline-flex items-center gap-1">
+            <Clock className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+            {t("lessonTime", { minutes: task.lessonTimeMinutes })}
+          </span>
+          <span className="text-xs opacity-80">· {t("lessonTimeHelp")}</span>
+        </p>
+      </div>
+
+      <TaskAchievementChips
+        keys={task.achievementKeys}
+        label={tRoad("achievementTracks")}
+        className="mt-2"
+      />
 
       {task.explanation?.trim() && (
         <Card>
@@ -311,6 +336,12 @@ export function TaskDetail({ roadmapId, task }: Props) {
           </CardContent>
         </Card>
       )}
+
+      <TaskCoachChat
+        taskId={task.id}
+        status={status}
+        chargePerMessage={coachChargePerMessage}
+      />
 
       <div
         className={

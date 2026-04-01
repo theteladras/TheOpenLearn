@@ -60,6 +60,9 @@ export default async function DashboardPage({ params }: Props) {
   let phasesComplete = 0;
   let phasesTotal = 0;
 
+  const lessonCategoryAgg: Record<string, { total: number; done: number }> =
+    {};
+
   for (const r of roadmaps) {
     const { total, completed } = countRoadmapTasks(r);
     const ph = countPhasesDone(r);
@@ -67,7 +70,27 @@ export default async function DashboardPage({ params }: Props) {
     doneTasks += completed;
     phasesTotal += ph.total;
     phasesComplete += ph.completed;
+
+    const journeyCluster = r.learningIntent?.topicClusterKey ?? "general";
+    for (const phase of r.phases) {
+      for (const task of phase.tasks) {
+        const cat = normalizeClusterKey(
+          task.lessonCategory ?? journeyCluster,
+        );
+        if (!lessonCategoryAgg[cat]) {
+          lessonCategoryAgg[cat] = { total: 0, done: 0 };
+        }
+        lessonCategoryAgg[cat].total += 1;
+        if (task.progress[0]?.status === "COMPLETED") {
+          lessonCategoryAgg[cat].done += 1;
+        }
+      }
+    }
   }
+
+  const lessonCategories = Object.entries(lessonCategoryAgg)
+    .map(([key, v]) => ({ key, total: v.total, done: v.done }))
+    .sort((a, b) => b.total - a.total);
 
   const overallPct = progressPercent(doneTasks, totalTasks);
   const phasesPct = progressPercent(phasesComplete, phasesTotal);
@@ -125,6 +148,7 @@ export default async function DashboardPage({ params }: Props) {
           tasksCompletedThisWeek,
           xpTotal: user.xpTotal,
           streakDays: user.streakDays,
+          lessonCategories,
         }}
       />
 
@@ -172,9 +196,21 @@ export default async function DashboardPage({ params }: Props) {
                       <>
                         <Progress value={pct} className="h-2" />
                         <div className="flex flex-wrap items-center justify-between gap-3">
-                          <p className="text-sm text-[var(--muted)]">
-                            {completed}/{total} · {featured.estDurationLabel}
-                          </p>
+                          <div className="min-w-0 space-y-0.5 text-sm text-[var(--muted)]">
+                            <p>
+                              {t("featuredJourneyTasksOnly", {
+                                done: completed,
+                                total,
+                              })}
+                            </p>
+                            {featured.estDurationLabel ? (
+                              <p className="text-xs leading-snug">
+                                {t("featuredJourneyPlanEstimate", {
+                                  estimate: featured.estDurationLabel,
+                                })}
+                              </p>
+                            ) : null}
+                          </div>
                           <Button asChild className="gap-2">
                             <Link href={`/roadmap/${featured.id}`}>
                               {t("continue")}

@@ -8,12 +8,15 @@ import type {
 } from "@/types/ai";
 import {
   analyzeSourceWithProvider,
+  coachTaskWithProvider,
   generateContinuationSuggestionsWithProvider,
   generateRoadmapWithProvider,
+  type TaskCoachLLMInput,
 } from "./llm";
 import {
   analyzeSourceMock,
   mockContinuationSuggestions,
+  mockTaskCoachReply,
   pickMockTemplates,
 } from "./mock-templates";
 
@@ -92,4 +95,18 @@ export async function generateContinuationSuggestions(input: {
     return generateContinuationSuggestionsWithProvider(provider, input);
   }
   return mockContinuationSuggestions(input);
+}
+
+/** Task-scoped coach: answers in context of one roadmap task. */
+export async function answerTaskCoach(
+  input: TaskCoachLLMInput,
+): Promise<string> {
+  const provider = getProvider();
+  if (provider === "openai" || provider === "anthropic") {
+    return coachTaskWithProvider(provider, input);
+  }
+  return mockTaskCoachReply({
+    taskTitle: input.taskTitle,
+    newQuestion: input.newQuestion,
+  });
 }

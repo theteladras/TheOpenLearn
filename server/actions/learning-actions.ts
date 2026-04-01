@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import {
   analyzeSource,
+  answerTaskCoach,
   generateContinuationSuggestions,
   generateRoadmap,
 } from "@/server/ai/ai-service";
@@ -18,9 +19,26 @@ import {
   buildLinkSourceAppendix,
   truncatePackedSource,
 } from "@/lib/link-source-enrichment";
+import {
+  clusterAchievementSlug,
+  countCompletedTasksPerCategory,
+} from "@/lib/cluster-achievements";
+import {
+  collectMilestoneKeysFromGenerated,
+  ensureClusterMilestoneAchievements,
+  ensureSkillMilestoneAchievements,
+} from "@/lib/ensure-milestone-achievements";
+import {
+  countCompletedTasksPerSkillKey,
+  skillAchievementSlug,
+} from "@/lib/skill-achievements";
 import { continuationRowSignature } from "@/lib/continuation-signature";
 import { countRoadmapTasks } from "@/lib/journey-stats";
-import { inferTopicCluster } from "@/lib/topic-cluster";
+import {
+  inferTopicCluster,
+  normalizeClusterKey,
+  TOPIC_CLUSTER_KEYS,
+} from "@/lib/topic-cluster";
 import type {
   ContinuationStartedStatus,
   ContinuationSuggestionRow,
@@ -34,6 +52,7 @@ import {
   COIN_JOURNEY_COMPLETE,
   COIN_REFLECTION_BONUS,
   COIN_START_JOURNEY_FREE,
+  COIN_TASK_AI_MESSAGE,
   COIN_TOPIC_COMPLETE,
   REFLECTION_MIN_CHARS,
   coinsForSingleTaskPhaseComplete,
@@ -362,8 +381,11 @@ export async function confirmAndCreateRoadmap(
               whyMatters: t.whyMatters,
               mentorPerspective: t.mentorPerspective,
               instructions: t.instructions,
+              lessonCategory: t.lessonCategory,
+              achievementKeys: t.achievementKeys,
               order: ti,
               xpReward: t.xpReward,
+              estimatedMinutes: t.estimatedMinutes,
             },
           });
           flatTaskIds.push(task.id);
@@ -403,6 +425,10 @@ export async function confirmAndCreateRoadmap(
 
       return roadmap.id;
     });
+
+    const { clusters, skills } = collectMilestoneKeysFromGenerated(generated);
+    await ensureClusterMilestoneAchievements(clusters);
+    await ensureSkillMilestoneAchievements(skills);
 
     revalidatePath("/dashboard");
     revalidatePath(`/roadmap/${roadmapId}`);
@@ -813,8 +839,11 @@ export async function startContinuationFromRoadmap(
               whyMatters: t.whyMatters,
               mentorPerspective: t.mentorPerspective,
               instructions: t.instructions,
+              lessonCategory: t.lessonCategory,
+              achievementKeys: t.achievementKeys,
               order: ti,
               xpReward: t.xpReward,
+              estimatedMinutes: t.estimatedMinutes,
             },
           });
           flatTaskIds.push(task.id);
@@ -854,6 +883,10 @@ export async function startContinuationFromRoadmap(
 
       return roadmap.id;
     });
+
+    const { clusters, skills } = collectMilestoneKeysFromGenerated(generated);
+    await ensureClusterMilestoneAchievements(clusters);
+    await ensureSkillMilestoneAchievements(skills);
 
     revalidatePath("/dashboard");
     revalidatePath(`/roadmap/${roadmapId}`);
@@ -1106,6 +1139,26 @@ export async function markTaskComplete(taskId: string): Promise<
     if (completedCount >= 5) await grant("consistent_learner");
     if (roadmapDone) await grant("roadmap_finisher");
 
+    const perCategory = await countCompletedTasksPerCategory(user.id);
+    for (const key of TOPIC_CLUSTER_KEYS) {
+      const n = perCategory[key];
+      if (n >= 1) await grant(clusterAchievementSlug(key, "once"));
+      if (n >= 2) await grant(clusterAchievementSlug(key, "twice"));
+      if (n >= 3) await grant(clusterAchievementSlug(key, "many"));
+    }
+
+    const perSkill = await countCompletedTasksPerSkillKey(user.id);
+    const skillKeysWithProgress = Object.keys(perSkill).filter(
+      (k) => (perSkill[k] ?? 0) > 0,
+    );
+    await ensureSkillMilestoneAchievements(skillKeysWithProgress);
+    for (const key of skillKeysWithProgress) {
+      const n = perSkill[key] ?? 0;
+      if (n >= 1) await grant(skillAchievementSlug(key, "once"));
+      if (n >= 2) await grant(skillAchievementSlug(key, "twice"));
+      if (n >= 3) await grant(skillAchievementSlug(key, "many"));
+    }
+
     let coinsEarned = 0;
     const wallet = await prisma.user.findUnique({
       where: { id: user.id },
@@ -1141,6 +1194,7 @@ export async function markTaskComplete(taskId: string): Promise<
         : "task";
 
     revalidatePath("/dashboard");
+    revalidatePath("/dashboard/achievements");
     revalidatePath(`/roadmap/${roadmapId}`);
     revalidatePath(`/roadmap/${roadmapId}/task/${taskId}`);
 
@@ -1185,6 +1239,161 @@ function revalidatePublicLearningPaths(userId: string, profilePublic: boolean) {
     revalidatePath(`${prefix}/feed`);
     revalidatePath(`${prefix}/community`);
     revalidatePath(`${prefix}/community/u/${userId}`);
+  }
+}
+
+const askTaskCoachSchema = z.object({
+  taskId: z.string(),
+  message: z.string().min(1).max(4000),
+  history: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string().max(12_000),
+      }),
+    )
+    .max(24)
+    .optional()
+    .default([]),
+});
+
+function normalizeCoachHistory(
+  raw: { role: "user" | "assistant"; content: string }[],
+): { role: "user" | "assistant"; content: string }[] {
+  const slice = raw.slice(-24);
+  const trimmed: { role: "user" | "assistant"; content: string }[] = [];
+  for (const m of slice) {
+    if (m.role !== "user" && m.role !== "assistant") continue;
+    const c = m.content.trim();
+    if (!c) continue;
+    trimmed.push({ role: m.role, content: c.slice(0, 8000) });
+  }
+  const firstUser = trimmed.findIndex((m) => m.role === "user");
+  if (firstUser < 0) return [];
+  let work = trimmed.slice(firstUser);
+  while (work.length > 0 && work[work.length - 1]!.role === "user") {
+    work.pop();
+  }
+  let expect: "user" | "assistant" = "user";
+  const cleaned: typeof work = [];
+  for (const m of work) {
+    if (m.role !== expect) break;
+    cleaned.push(m);
+    expect = expect === "user" ? "assistant" : "user";
+  }
+  return cleaned;
+}
+
+export async function askTaskCoach(
+  raw: z.input<typeof askTaskCoachSchema>,
+): Promise<
+  | { ok: true; reply: string }
+  | { ok: false; error: "INSUFFICIENT_COINS" | "NOT_AVAILABLE" | "INVALID" | "COACH_FAILED" }
+> {
+  const parsed = askTaskCoachSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { ok: false, error: "INVALID" };
+  }
+  const { taskId, message, history: historyRaw } = parsed.data;
+  const history = normalizeCoachHistory(historyRaw ?? []);
+
+  const user = await getOrCreateAppUser();
+  const task = await prisma.roadmapTask.findFirst({
+    where: { id: taskId, phase: { roadmap: { userId: user.id } } },
+    include: {
+      resources: { orderBy: { order: "asc" } },
+      evaluation: true,
+      progress: { where: { userId: user.id } },
+      phase: {
+        select: {
+          roadmapId: true,
+          roadmap: {
+            select: {
+              title: true,
+              learningIntent: {
+                select: { topicClusterKey: true },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!task) {
+    return { ok: false, error: "NOT_AVAILABLE" };
+  }
+
+  const progress = task.progress[0];
+  const status = progress?.status ?? "LOCKED";
+  if (status === "LOCKED") {
+    return { ok: false, error: "NOT_AVAILABLE" };
+  }
+
+  const shouldCharge = !skipsCoinEconomy(user.plan);
+  if (shouldCharge && user.coins < COIN_TASK_AI_MESSAGE) {
+    return { ok: false, error: "INSUFFICIENT_COINS" };
+  }
+
+  const journeyCluster =
+    task.phase.roadmap.learningIntent?.topicClusterKey ?? "general";
+  const lessonCategory = normalizeClusterKey(
+    task.lessonCategory ?? journeyCluster,
+  );
+
+  const resourcesLines = task.resources.length
+    ? task.resources
+        .map(
+          (r) =>
+            `- ${r.title}${r.url ? ` — ${r.url}` : ""} (${r.type})`,
+        )
+        .join("\n")
+    : "";
+
+  const coachInput = {
+    roadmapTitle: task.phase.roadmap.title,
+    lessonCategory,
+    achievementKeys: task.achievementKeys,
+    taskTitle: task.title,
+    explanation: task.explanation,
+    whyMatters: task.whyMatters,
+    mentorPerspective: task.mentorPerspective,
+    instructions: task.instructions,
+    resourcesLines,
+    evaluationSummary: task.evaluation?.summary ?? null,
+    checkpointDescription: task.evaluation?.checkpointDescription ?? null,
+    quizPassed: Boolean(progress?.quizPassedAt),
+    priorMessages: history,
+    newQuestion: message.trim(),
+  };
+
+  let debited = false;
+  try {
+    if (shouldCharge) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { coins: { decrement: COIN_TASK_AI_MESSAGE } },
+      });
+      debited = true;
+    }
+    const reply = await answerTaskCoach(coachInput);
+    revalidatePath("/dashboard");
+    const roadmapId = task.phase.roadmapId;
+    revalidatePath(`/roadmap/${roadmapId}`);
+    revalidatePath(`/roadmap/${roadmapId}/task/${taskId}`);
+    return { ok: true, reply };
+  } catch (e) {
+    console.error("askTaskCoach", e);
+    if (debited) {
+      try {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { coins: { increment: COIN_TASK_AI_MESSAGE } },
+        });
+      } catch {
+        /* best-effort refund */
+      }
+    }
+    return { ok: false, error: "COACH_FAILED" };
   }
 }
 

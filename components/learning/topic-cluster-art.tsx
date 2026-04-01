@@ -83,16 +83,20 @@ function resolvedKey(clusterKey: string): TopicClusterKey {
 export function TopicClusterMark({
   clusterKey,
   featured,
+  compact,
   className,
 }: {
   clusterKey: string;
   featured?: boolean;
+  /** Dense UI (e.g. analytics grid): small icon tile. */
+  compact?: boolean;
   className?: string;
 }) {
   const key = resolvedKey(clusterKey);
   const { Icon, frame, glow } = STYLES[key];
-  const box = featured
-    ? "size-16 sm:size-20 rounded-2xl"
+  const box =
+    featured ? "size-16 sm:size-20 rounded-2xl"
+    : compact ? "size-7 rounded-md"
     : "size-12 rounded-xl";
   return (
     <div
@@ -107,9 +111,11 @@ export function TopicClusterMark({
       <Icon
         className={cn(
           "text-white/95 drop-shadow",
-          featured ? "size-8 sm:size-10" : "size-6",
+          featured ? "size-8 sm:size-10"
+          : compact ? "size-3.5"
+          : "size-6",
         )}
-        strokeWidth={featured ? 1.5 : 1.75}
+        strokeWidth={featured ? 1.5 : compact ? 2 : 1.75}
       />
     </div>
   );

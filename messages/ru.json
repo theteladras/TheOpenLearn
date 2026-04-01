@@ -282,6 +282,8 @@
     "view": "Открыть",
     "continue": "Продолжить",
     "latestJourney": "Последний · продолжить здесь",
+    "featuredJourneyTasksOnly": "{done}/{total} задач",
+    "featuredJourneyPlanEstimate": "Исходный план: {estimate}",
     "allJourneys": "Все маршруты",
     "tasksLabel": "{count, plural, one {# задача} few {# задачи} many {# задач} other {# задач}}",
     "navMenu": "Меню",
@@ -302,12 +304,13 @@
   },
   "AchievementsPage": {
     "title": "Достижения",
-    "subtitle": "Зарабатывайте XP и значки, двигаясь по задачам и фазам. Иллюстрации позже — пока эмодзи.",
+    "subtitle": "Получайте XP и уровни, завершая уроки по областям и навыкам. Уровни I–III отражают глубину в каждой ветке.",
     "backDashboard": "Назад к панели",
     "collectionProgress": "Коллекция",
     "unlocked": "открыто",
     "stateUnlocked": "Получено",
     "stateLocked": "Закрыто",
+    "tierLegend": "Уровень вехи",
     "earnedOn": "Получено {date}",
     "artworkPlaceholder": "Иллюстрация значка",
     "artworkHint": "Кастомная графика позже — временное эмодзи."

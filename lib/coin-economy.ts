@@ -12,6 +12,8 @@ export const COIN_REFLECTION_BONUS = 5;
 export const REFLECTION_MIN_CHARS = 150;
 /** Extra bonus when a free user completes the entire roadmap (awarded once with journey completion, not per task). */
 export const COIN_EXCELLENCE_BONUS = 10;
+/** Per message when asking the task-scoped AI coach (free plan only; PRO skips coin economy). */
+export const COIN_TASK_AI_MESSAGE = 1;
 
 export function currentCalendarPeriod(d = new Date()): number {
   return d.getFullYear() * 100 + (d.getMonth() + 1);

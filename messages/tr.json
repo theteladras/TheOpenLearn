@@ -282,6 +282,8 @@
     "view": "Aç",
     "continue": "Devam",
     "latestJourney": "Son · buradan sürdür",
+    "featuredJourneyTasksOnly": "{done}/{total} görev",
+    "featuredJourneyPlanEstimate": "Orijinal plan: {estimate}",
     "allJourneys": "Tüm yolculuklar",
     "tasksLabel": "{count, plural, one {# görev} other {# görev}}",
     "navMenu": "Menü",
@@ -302,12 +304,13 @@
   },
   "AchievementsPage": {
     "title": "Başarılar",
-    "subtitle": "Görevler ve fazlarda ilerledikçe XP ve rozet kazanın. Görseller yakında — şimdilik emoji.",
+    "subtitle": "Alan ve beceri bazında dersleri tamamladıkça XP ve kademe kazanın. I–III kademeleri her yolda derinliği gösterir.",
     "backDashboard": "Panele dön",
     "collectionProgress": "Koleksiyon",
     "unlocked": "açıldı",
     "stateUnlocked": "Kazanıldı",
     "stateLocked": "Kilitli",
+    "tierLegend": "Kilometre taşı seviyesi",
     "earnedOn": "Kazanıldı: {date}",
     "artworkPlaceholder": "Rozet görseli",
     "artworkHint": "Özel grafikler sonra — geçici emoji."

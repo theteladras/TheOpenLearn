@@ -2,8 +2,16 @@
 
 import { type ReactNode } from "react";
 import { useTranslations } from "next-intl";
+import { TopicClusterMark } from "@/components/learning/topic-cluster-art";
 import { Progress } from "@/components/ui/progress";
+import { normalizeClusterKey } from "@/lib/topic-cluster";
 import { cn } from "@/lib/utils";
+
+export type DashboardLessonCategoryStat = {
+  key: string;
+  total: number;
+  done: number;
+};
 
 export type DashboardAnalyticsData = {
   overallPct: number;
@@ -14,6 +22,8 @@ export type DashboardAnalyticsData = {
   tasksCompletedThisWeek: number;
   xpTotal: number;
   streakDays: number;
+  /** Task counts by lesson category (task.lessonCategory or journey fallback). */
+  lessonCategories: DashboardLessonCategoryStat[];
 };
 
 function StatChip({
@@ -44,6 +54,7 @@ function StatChip({
 
 export function DashboardAnalytics({ data }: { data: DashboardAnalyticsData }) {
   const t = useTranslations("Dashboard");
+  const tCluster = useTranslations("TopicClusters");
 
   return (
     <section
@@ -101,6 +112,55 @@ export function DashboardAnalytics({ data }: { data: DashboardAnalyticsData }) {
             {data.xpTotal} XP · {t("streakDays", { count: data.streakDays })}
           </StatChip>
         </div>
+
+        {data.lessonCategories.length > 0 && (
+          <div
+            className="mt-4 border-t border-violet-500/15 pt-3 dark:border-violet-400/10"
+            title={t("analyticsLessonCategoriesHint")}
+          >
+            <h3 className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
+              {t("analyticsLessonCategories")}
+            </h3>
+            <ul className="mt-2 grid grid-cols-1 gap-x-3 gap-y-1.5 sm:grid-cols-2 lg:grid-cols-3">
+              {data.lessonCategories.map((row) => {
+                const pct =
+                  row.total > 0 ?
+                    Math.round((row.done / row.total) * 100)
+                  : 0;
+                const k = normalizeClusterKey(row.key);
+                return (
+                  <li
+                    key={row.key}
+                    className="flex min-h-0 items-center gap-2 rounded-lg border border-[var(--border)]/60 bg-[var(--card)]/50 px-2 py-1.5 dark:border-white/[0.07] dark:bg-[var(--card)]/35"
+                  >
+                    <TopicClusterMark clusterKey={k} compact />
+                    <div className="min-w-0 flex-1 leading-none">
+                      <p
+                        className="truncate text-[11px] font-medium text-[var(--foreground)]"
+                        title={tCluster(k)}
+                      >
+                        {tCluster(k)}
+                      </p>
+                      <p className="mt-0.5 text-[10px] tabular-nums text-[var(--muted)]">
+                        {t("analyticsLessonCategoryLine", {
+                          done: row.done,
+                          total: row.total,
+                        })}
+                        {" · "}
+                        {pct}%
+                      </p>
+                    </div>
+                    <Progress
+                      value={pct}
+                      className="hidden h-1 w-10 shrink-0 sm:block"
+                      aria-hidden
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
       </div>
     </section>
   );

@@ -282,6 +282,8 @@
     "view": "Abrir",
     "continue": "Continuar",
     "latestJourney": "Última · seguir aquí",
+    "featuredJourneyTasksOnly": "{done}/{total} tareas",
+    "featuredJourneyPlanEstimate": "Plan original: {estimate}",
     "allJourneys": "Todas las rutas",
     "tasksLabel": "{count, plural, one {# tarea} other {# tareas}}",
     "navMenu": "Menú",
@@ -302,12 +304,13 @@
   },
   "AchievementsPage": {
     "title": "Logros",
-    "subtitle": "Gana XP e insignias al avanzar en tareas y fases. Ilustraciones próximamente; emoji temporal.",
+    "subtitle": "Gana XP y niveles al completar lecciones por área y habilidad. Los niveles I–III marcan la profundidad en cada vía.",
     "backDashboard": "Volver al panel",
     "collectionProgress": "Colección",
     "unlocked": "desbloqueados",
     "stateUnlocked": "Conseguido",
     "stateLocked": "Bloqueado",
+    "tierLegend": "Nivel de hito",
     "earnedOn": "Conseguido el {date}",
     "artworkPlaceholder": "Arte de la insignia",
     "artworkHint": "Gráficos personalizados más adelante; emoji provisional."
