@@ -6,16 +6,22 @@ import type {
   UnderstandingInput,
   UnderstandingResult,
 } from "@/types/ai";
+import type {
+  LessonHandbookDoc,
+  LessonHandbookLLMInput,
+} from "@/server/ai/lesson-handbook-schema";
 import {
   analyzeSourceWithProvider,
   coachTaskWithProvider,
   generateContinuationSuggestionsWithProvider,
+  generateLessonHandbookWithProvider,
   generateRoadmapWithProvider,
   type TaskCoachLLMInput,
 } from "./llm";
 import {
   analyzeSourceMock,
   mockContinuationSuggestions,
+  mockLessonHandbook,
   mockTaskCoachReply,
   pickMockTemplates,
 } from "./mock-templates";
@@ -109,4 +115,15 @@ export async function answerTaskCoach(
     taskTitle: input.taskTitle,
     newQuestion: input.newQuestion,
   });
+}
+
+/** One-shot lesson handbook for a completed task (PDF source JSON). */
+export async function generateLessonHandbook(
+  input: LessonHandbookLLMInput,
+): Promise<LessonHandbookDoc> {
+  const provider = getProvider();
+  if (provider === "openai" || provider === "anthropic") {
+    return generateLessonHandbookWithProvider(provider, input);
+  }
+  return mockLessonHandbook(input);
 }

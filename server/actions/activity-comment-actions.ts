@@ -19,15 +19,18 @@ const addCommentSchema = z.object({
   lessonRefs: z.array(lessonRefInputSchema).max(4).optional(),
 });
 
-function revalidateFeedPaths() {
+function revalidateActivityPaths() {
   for (const loc of routing.locales) {
     const prefix = loc === routing.defaultLocale ? "" : `/${loc}`;
+    revalidatePath(`${prefix}/activities`);
+    revalidatePath(`${prefix}/rankings`);
     revalidatePath(`${prefix}/feed`);
     revalidatePath(`${prefix}/community`);
   }
 }
 
-async function assertPublicFeedTarget(
+/** Activity events on the public timeline must be on a public profile to receive comments. */
+async function assertPublicActivityCommentTarget(
   targetKind: FeedActivityTarget,
   targetId: string,
 ): Promise<boolean> {
@@ -131,14 +134,14 @@ export async function getMyLessonsForReference(): Promise<
   return flat.slice(0, 200);
 }
 
-export async function addFeedComment(
+export async function addActivityComment(
   raw: z.infer<typeof addCommentSchema>,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     const user = await getOrCreateAppUser();
     const input = addCommentSchema.parse(raw);
 
-    const targetOk = await assertPublicFeedTarget(
+    const targetOk = await assertPublicActivityCommentTarget(
       input.targetKind,
       input.targetId,
     );
@@ -161,7 +164,7 @@ export async function addFeedComment(
       },
     });
 
-    revalidateFeedPaths();
+    revalidateActivityPaths();
     return { ok: true };
   } catch (e) {
     return {

@@ -49,6 +49,8 @@ import {
   Workflow,
   Zap,
   Calculator,
+  Medal,
+  Orbit,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -192,6 +194,18 @@ const CORE_EPIC: Record<
     ring: "ring-violet-400/55",
     glow: "shadow-[0_0_40px_-4px_rgba(167,139,250,0.5)]",
   },
+  achievement_fan: {
+    Icon: Medal,
+    mesh: "from-rose-500/12 via-transparent to-amber-500/10",
+    ring: "ring-rose-400/40",
+    glow: "shadow-[0_0_34px_-6px_rgba(244,114,182,0.4)]",
+  },
+  topic_explorer: {
+    Icon: Orbit,
+    mesh: "from-cyan-500/12 via-transparent to-indigo-500/10",
+    ring: "ring-cyan-400/45",
+    glow: "shadow-[0_0_34px_-6px_rgba(34,211,238,0.38)]",
+  },
 };
 
 export type AchievementEpicCardProps = {
@@ -209,6 +223,9 @@ export type AchievementEpicCardProps = {
   };
   /** Footer: formatted “earned on …” when unlocked, else use lockedHint via labels. */
   footerLine: string | null;
+  /** Short recap when unlocked (extra body; keeps earned cards informative). */
+  earnedInsight?: string | null;
+  earnedInsightTitle?: string;
   /** Shown when locked: concrete steps + quick links to act on them. */
   howTo?:
     | {
@@ -229,6 +246,8 @@ export function AchievementEpicCard({
   microSubtitle,
   labels,
   footerLine,
+  earnedInsight,
+  earnedInsightTitle,
   howTo,
 }: AchievementEpicCardProps) {
   const core = CORE_EPIC[slug];
@@ -262,33 +281,33 @@ export function AchievementEpicCard({
     glow = unlocked ? style.glow : "";
   }
 
-  const tierBadge =
-    tier ?
-      <span
-        className={cn(
-          "inline-flex min-w-[1.75rem] justify-center rounded border border-white/15 bg-gradient-to-b px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white/95 shadow-sm",
-          TIER_EPIC[tier].ribbon,
-        )}
-      >
-        {TIER_EPIC[tier].label}
-      </span>
-    : null;
+  const tierBadge = tier ? (
+    <span
+      className={cn(
+        "inline-flex min-w-[1.75rem] justify-center rounded border border-white/15 bg-gradient-to-b px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white/95 shadow-sm",
+        TIER_EPIC[tier].ribbon,
+      )}
+    >
+      {TIER_EPIC[tier].label}
+    </span>
+  ) : null;
 
   return (
     <Card
       className={cn(
-        "group relative flex h-full min-h-[14.5rem] flex-col overflow-hidden border transition-[transform,box-shadow] duration-300",
-        unlocked ?
-          cn(
-            "border-white/10 bg-[var(--card)]/90",
-            glow || "shadow-lg shadow-black/10 dark:shadow-black/40",
-          )
-        : "border-[var(--border)]/60 bg-[var(--card)]/40 opacity-[0.92]",
+        "group relative flex h-full w-full min-h-[14.5rem] flex-col overflow-hidden border transition-[transform,box-shadow] duration-300",
+        unlocked
+          ? cn(
+              "border-white/10 bg-[var(--card)]/90",
+              glow || "shadow-lg shadow-black/10 dark:shadow-black/40",
+            )
+          : "border-[var(--border)]/50 bg-[var(--muted)]/[0.06] opacity-[0.88] saturate-[0.85]",
       )}
     >
       <div
         className={cn(
-          "pointer-events-none absolute inset-0 bg-gradient-to-br opacity-90",
+          "pointer-events-none absolute inset-0 bg-gradient-to-br",
+          unlocked ? "opacity-90" : "opacity-[0.38]",
           mesh,
         )}
         aria-hidden
@@ -304,10 +323,10 @@ export function AchievementEpicCard({
         <div className="flex items-start gap-3">
           <div
             className={cn(
-              "flex size-[3.25rem] shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br p-0.5",
-              unlocked ?
-                "from-white/25 to-white/5 text-white"
-              : "from-[var(--muted)]/20 to-[var(--muted)]/5 text-[var(--muted)]",
+              "flex size-[3.25rem] shrink-0 items-center justify-center rounded-2xl border bg-gradient-to-br p-0.5",
+              unlocked
+                ? "border-white/10 from-white/25 to-white/5 text-white"
+                : "border-[var(--border)]/60 from-[var(--muted)]/12 to-transparent text-[var(--muted)]",
             )}
           >
             <div
@@ -335,49 +354,85 @@ export function AchievementEpicCard({
               >
                 {unlocked ? labels.unlocked : labels.locked}
               </Badge>
-              {xpBonus > 0 ?
-                <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold tabular-nums text-amber-700 dark:text-amber-300">
+              {xpBonus > 0 ? (
+                <span
+                  className={cn(
+                    "rounded-full border px-2 py-0.5 text-[10px] font-bold tabular-nums",
+                    unlocked
+                      ? "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                      : "border-[var(--border)] bg-[var(--muted)]/20 text-[var(--muted)]",
+                  )}
+                >
                   +{xpBonus} XP
                 </span>
-              : null}
+              ) : null}
             </div>
-            <CardTitle className="text-balance font-semibold leading-snug tracking-tight text-[var(--foreground)] sm:text-[1.05rem]">
+            <CardTitle
+              className={cn(
+                "text-balance font-semibold leading-snug tracking-tight sm:text-[1.05rem]",
+                unlocked
+                  ? "text-[var(--foreground)]"
+                  : "text-[var(--foreground)]/80",
+              )}
+            >
               {title}
             </CardTitle>
-            {microSubtitle ?
+            {microSubtitle ? (
               <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--muted)]">
                 {microSubtitle}
               </p>
-            : null}
+            ) : null}
           </div>
         </div>
-        <CardDescription className="relative mt-auto text-pretty text-sm leading-relaxed text-[var(--muted)]">
+        <CardDescription
+          className={cn(
+            "relative mt-auto text-pretty text-sm leading-relaxed",
+            unlocked ? "text-[var(--muted)]" : "text-[var(--muted)]/90",
+          )}
+        >
           {description}
         </CardDescription>
-        {!unlocked && howTo ?
-          <div className="relative mt-3 rounded-lg border border-amber-500/25 bg-amber-500/[0.07] px-3 py-2.5 dark:border-amber-500/30 dark:bg-amber-950/25">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-900 dark:text-amber-100/90">
+        {unlocked && earnedInsight ? (
+          <div className="relative mt-3 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-2.5 dark:border-emerald-500/25 dark:bg-emerald-950/20">
+            {earnedInsightTitle ? (
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-800 dark:text-emerald-200/90">
+                {earnedInsightTitle}
+              </p>
+            ) : null}
+            <p
+              className={cn(
+                "text-pretty text-sm leading-snug text-[var(--foreground)]",
+                earnedInsightTitle ? "mt-1.5" : "",
+              )}
+            >
+              {earnedInsight}
+            </p>
+          </div>
+        ) : null}
+        {!unlocked && howTo ? (
+          <div className="relative mt-3 rounded-md border border-[var(--border)]/80 bg-[var(--muted)]/[0.09] px-2.5 py-2 dark:bg-[var(--muted)]/[0.12]">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--muted)]">
               {howTo.title}
             </p>
-            <p className="mt-1.5 text-pretty text-sm leading-snug text-[var(--foreground)]">
+            <p className="mt-1 text-pretty text-xs leading-snug text-[var(--foreground)]/85">
               {howTo.body}
             </p>
-            <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1">
+            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5">
               <Link
                 href="/dashboard"
-                className="text-xs font-semibold text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary"
+                className="text-[11px] font-medium text-[var(--muted)] underline decoration-[var(--muted)]/50 underline-offset-2 hover:text-[var(--foreground)] hover:decoration-[var(--foreground)]/40"
               >
                 {howTo.dashboardCta}
               </Link>
               <Link
                 href="/learn/new"
-                className="text-xs font-semibold text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary"
+                className="text-[11px] font-medium text-[var(--muted)] underline decoration-[var(--muted)]/50 underline-offset-2 hover:text-[var(--foreground)] hover:decoration-[var(--foreground)]/40"
               >
                 {howTo.learnCta}
               </Link>
             </div>
           </div>
-        : null}
+        ) : null}
       </CardHeader>
       <CardContent className="relative mt-auto border-t border-white/5 px-5 pb-4 pt-3">
         <p className="text-xs text-[var(--muted)]">

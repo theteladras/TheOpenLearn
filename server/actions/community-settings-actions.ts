@@ -29,7 +29,11 @@ export async function updateCommunityProfile(raw: z.infer<typeof schema>): Promi
       const prefix = loc === routing.defaultLocale ? "" : `/${loc}`;
       revalidatePath(`${prefix}/settings`);
       revalidatePath(`${prefix}/settings/community`);
+      revalidatePath(`${prefix}/profile`);
+      revalidatePath(`${prefix}/profile/account`);
       revalidatePath(`${prefix}/community`);
+      revalidatePath(`${prefix}/activities`);
+      revalidatePath(`${prefix}/rankings`);
       revalidatePath(`${prefix}/feed`);
       revalidatePath(`${prefix}/community/u/${user.id}`);
       revalidatePath(`${prefix}/community/u/${user.id}/followers`);

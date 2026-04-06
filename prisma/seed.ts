@@ -39,6 +39,20 @@ async function main() {
       xpBonus: 500,
       icon: null,
     },
+    {
+      slug: "achievement_fan",
+      title: "Badge enthusiast",
+      description: "Earn five or more achievements overall.",
+      xpBonus: 125,
+      icon: null,
+    },
+    {
+      slug: "topic_explorer",
+      title: "Topic explorer",
+      description: "Complete a lesson in three different topic areas.",
+      xpBonus: 150,
+      icon: null,
+    },
   ];
 
   for (const row of core) {

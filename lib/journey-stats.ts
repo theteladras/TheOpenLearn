@@ -1,6 +1,10 @@
 import type { TaskProgressState } from "@prisma/client";
+import { isLessonFinishedWithExam as lessonFinished } from "@/lib/lesson-finished";
 
-type ProgressSlice = { status: TaskProgressState };
+type ProgressSlice = {
+  status: TaskProgressState;
+  quizPassedAt: Date | null;
+};
 
 type TaskWithProgress = {
   progress: ProgressSlice[];
@@ -23,7 +27,7 @@ export function countRoadmapTasks(roadmap: RoadmapWithPhaseProgress): {
   for (const p of roadmap.phases) {
     for (const task of p.tasks) {
       total++;
-      if (task.progress[0]?.status === "COMPLETED") completed++;
+      if (lessonFinished(task.progress[0])) completed++;
     }
   }
   return { total, completed };
@@ -38,7 +42,7 @@ export function countPhasesDone(roadmap: RoadmapWithPhaseProgress): {
   for (const p of roadmap.phases) {
     if (
       p.tasks.length > 0 &&
-      p.tasks.every((t) => t.progress[0]?.status === "COMPLETED")
+      p.tasks.every((t) => lessonFinished(t.progress[0]))
     ) {
       completed++;
     }

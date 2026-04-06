@@ -69,6 +69,11 @@ export type ContinuationFromContext = {
   /** Which phase/task skills this path extends (shown to the model and learner). */
   buildsOn: string;
   rationale: string;
+  /**
+   * Lessons on the parent journey not yet passed (exam). The model must not assume mastery there;
+   * new tasks should reference the prior chapter by name and deepen from completed work only.
+   */
+  notYetCompletedOnPrior?: string | null;
 };
 
 export type RoadmapGenerationInput = UnderstandingResult & {
@@ -140,6 +145,12 @@ export type GeneratedTask = {
   mentorPerspective: string;
   /** Markdown; steps read best with short paragraphs or bullet lists. */
   instructions: string;
+  /** 4–12 key phrases for this lesson; surfaced as Wikipedia/Google lookups in the UI. */
+  keyTerms: string[];
+  /** Markdown; short takeaways the learner should remember after this task. */
+  recap: string;
+  /** Plain-text “did you know” lines for the sidebar; 2–3 short sentences, no markdown. */
+  funFacts: string[];
   /** One app topic-cluster bucket best describing this lesson’s primary focus. */
   lessonCategory: TopicClusterKey;
   /** 0–3 curated skill tags (snake_case slugs) for skill-track achievements; empty if not applicable. */
@@ -169,11 +180,20 @@ export type GeneratedRoadmap = {
 /** Mock / template roadmaps before `mentorPerspective` is filled in. */
 export type GeneratedTaskDraft = Omit<
   GeneratedTask,
-  "mentorPerspective" | "lessonCategory" | "achievementKeys" | "estimatedMinutes"
+  | "mentorPerspective"
+  | "lessonCategory"
+  | "achievementKeys"
+  | "estimatedMinutes"
+  | "keyTerms"
+  | "recap"
+  | "funFacts"
 > & {
   lessonCategory?: TopicClusterKey;
   achievementKeys?: string[];
   estimatedMinutes?: number;
+  keyTerms?: string[];
+  recap?: string;
+  funFacts?: string[];
 };
 export type GeneratedPhaseDraft = Omit<GeneratedPhase, "tasks"> & {
   tasks: GeneratedTaskDraft[];

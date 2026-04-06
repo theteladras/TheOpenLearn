@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { getOrCreateAppUser } from "@/lib/auth-user";
-import { skipsCoinEconomy } from "@/lib/coin-economy";
+import { COIN_LESSON_HANDBOOK, skipsCoinEconomy } from "@/lib/coin-economy";
 import { prisma } from "@/lib/db";
-import { resolveTaskEstimatedMinutes } from "@/lib/lesson-time-estimate";
+import { resolveTaskLessonMinutes } from "@/lib/lesson-time-estimate";
 import { parseTaskQuizQuestions } from "@/lib/task-quiz";
 import { TaskDetail } from "@/features/roadmap/task-detail";
 
@@ -23,26 +23,39 @@ export default async function TaskPage({ params }: Props) {
       resources: { orderBy: { order: "asc" } },
       evaluation: true,
       progress: { where: { userId: user.id } },
+      _count: { select: { resources: true } },
     },
   });
 
   if (!task) notFound();
+
+  const handbookRow = await prisma.lessonHandbook.findUnique({
+    where: { userId_taskId: { userId: user.id, taskId: task.id } },
+    select: { id: true },
+  });
 
   const progress = task.progress[0];
   const status = progress?.status ?? "LOCKED";
   const quizLen = parseTaskQuizQuestions(
     task.evaluation?.quizQuestions ?? null,
   ).length;
-  const lessonTimeMinutes = resolveTaskEstimatedMinutes(
-    task.estimatedMinutes,
-    task.xpReward,
-    quizLen,
-  );
+  const lessonTimeMinutes = resolveTaskLessonMinutes({
+    explanation: task.explanation,
+    mentorPerspective: task.mentorPerspective,
+    instructions: task.instructions,
+    whyMatters: task.whyMatters,
+    quizCount: quizLen,
+    resourceCount: task._count.resources,
+    storedEstimatedMinutes: task.estimatedMinutes,
+    xpReward: task.xpReward,
+  });
 
   return (
     <TaskDetail
       roadmapId={roadmapId}
       coachChargePerMessage={!skipsCoinEconomy(user.plan)}
+      handbookOwned={Boolean(handbookRow)}
+      handbookCoinCost={COIN_LESSON_HANDBOOK}
       task={{
         id: task.id,
         title: task.title,
@@ -50,6 +63,9 @@ export default async function TaskPage({ params }: Props) {
         whyMatters: task.whyMatters,
         mentorPerspective: task.mentorPerspective,
         instructions: task.instructions,
+        recap: task.recap,
+        funFacts: task.funFacts ?? [],
+        keyTerms: task.keyTerms ?? [],
         xpReward: task.xpReward,
         resources: task.resources,
         evaluation: task.evaluation

@@ -64,6 +64,7 @@ model User {
   intents            LearningIntent[]
   roadmaps           Roadmap[]
   taskProgress       UserTaskProgress[]
+  lessonHandbooks    LessonHandbook[]
   userAchievements   UserAchievement[]
   follows            UserFollow[] @relation("UserFollows")
   followedBy         UserFollow[] @relation("UserFollowedBy")
@@ -190,6 +191,12 @@ model RoadmapTask {
   /** Concrete read-map and pitfalls — not just "open the link". */
   mentorPerspective String?            @db.Text
   instructions      String?            @db.Text
+  /** Important vocabulary for this lesson (from AI); used for sidebar lookups. */
+  keyTerms          String[]         @default([])
+  /** Short markdown recap / takeaways for this lesson (from AI). */
+  recap             String?          @db.Text
+  /** 2–3 memorable bonus facts from generation (plain text); UI falls back to curated snippets when empty. */
+  funFacts          String[]         @default([])
   order        Int
   xpReward     Int                @default(25)
   /** Model-estimated active minutes (reading + practice + quiz); null on pre-migration rows. */
@@ -197,10 +204,28 @@ model RoadmapTask {
   resources    TaskResource[]
   evaluation   TaskEvaluation?
   progress     UserTaskProgress[]
+  handbooks    LessonHandbook[]
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
   @@index([phaseId, order])
+}
+
+/** AI-generated reference handbook (JSON) purchased with coins after a lesson is complete. */
+model LessonHandbook {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId       String
+  task         RoadmapTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  /** Parsed with lessonHandbookDocSchema: title, sections, quickReference, etc. */
+  handbookJson Json
+  coinsSpent   Int         @default(0)
+  createdAt    DateTime    @default(now())
+
+  @@unique([userId, taskId])
+  @@index([userId])
+  @@index([taskId])
 }
 
 model TaskResource {

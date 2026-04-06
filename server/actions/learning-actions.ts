@@ -33,6 +33,11 @@ import {
   skillAchievementSlug,
 } from "@/lib/skill-achievements";
 import { continuationRowSignature } from "@/lib/continuation-signature";
+import { isLessonFinishedWithExam } from "@/lib/lesson-finished";
+import {
+  buildFullParentTaskSummary,
+  buildParentContinuationSummaries,
+} from "@/lib/parent-roadmap-continuation-summary";
 import { countRoadmapTasks } from "@/lib/journey-stats";
 import {
   inferTopicCluster,
@@ -40,6 +45,7 @@ import {
   TOPIC_CLUSTER_KEYS,
 } from "@/lib/topic-cluster";
 import type {
+  ContinuationFromContext,
   ContinuationStartedStatus,
   ContinuationSuggestionRow,
   ContinuationSuggestionRowWithSig,
@@ -155,7 +161,22 @@ export type DuplicateMatch = {
   roadmapId: string | null;
   title: string;
   createdAt: Date;
+  /** Lessons passed (exam) on the linked roadmap, if any. */
+  completedLessons: number;
+  totalLessons: number;
+  journeyComplete: boolean;
 };
+
+function intentSubjectLikelyMatches(
+  subject: string,
+  topicTitle: string,
+  userGoal: string | null | undefined,
+): boolean {
+  if (topicsLikelyDuplicate(subject, topicTitle)) return true;
+  const g = userGoal?.trim();
+  if (g && topicsLikelyDuplicate(subject, g)) return true;
+  return false;
+}
 
 export async function analyzeLearningInput(
   raw: z.infer<typeof analyzeSchema>,
@@ -260,18 +281,54 @@ async function findDuplicateIntentions(
 ): Promise<DuplicateMatch[]> {
   const intents = await prisma.learningIntent.findMany({
     where: { userId },
-    include: { roadmap: { select: { id: true } } },
+    include: {
+      roadmap: {
+        include: {
+          phases: {
+            orderBy: { order: "asc" },
+            include: {
+              tasks: {
+                orderBy: { order: "asc" },
+                include: {
+                  progress: { where: { userId } },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     orderBy: { createdAt: "desc" },
     take: 40,
   });
   return intents
-    .filter((i) => topicsLikelyDuplicate(subject, i.topicTitle))
-    .map((i) => ({
-      intentId: i.id,
-      roadmapId: i.roadmap?.id ?? null,
-      title: i.topicTitle,
-      createdAt: i.createdAt,
-    }));
+    .filter((i) =>
+      intentSubjectLikelyMatches(subject, i.topicTitle, i.userGoal),
+    )
+    .map((i) => {
+      const r = i.roadmap;
+      if (!r) {
+        return {
+          intentId: i.id,
+          roadmapId: null,
+          title: i.topicTitle,
+          createdAt: i.createdAt,
+          completedLessons: 0,
+          totalLessons: 0,
+          journeyComplete: false,
+        };
+      }
+      const sums = buildParentContinuationSummaries(r);
+      return {
+        intentId: i.id,
+        roadmapId: r.id,
+        title: i.topicTitle,
+        createdAt: i.createdAt,
+        completedLessons: sums.completedLessonCount,
+        totalLessons: sums.totalLessonCount,
+        journeyComplete: sums.allLessonsComplete,
+      };
+    });
 }
 
 export async function checkDuplicateSubject(
@@ -381,6 +438,9 @@ export async function confirmAndCreateRoadmap(
               whyMatters: t.whyMatters,
               mentorPerspective: t.mentorPerspective,
               instructions: t.instructions,
+              keyTerms: t.keyTerms,
+              recap: t.recap || null,
+              funFacts: t.funFacts ?? [],
               lessonCategory: t.lessonCategory,
               achievementKeys: t.achievementKeys,
               order: ti,
@@ -448,6 +508,17 @@ const startContinuationSchema = z.object({
   buildsOn: z.string().min(1).max(500),
   rationale: z.string().min(1).max(2000),
   roadmapDepth: z.enum(["shallow", "standard", "deep"]),
+});
+
+/** Linked “next chapter” when the learner already has progress on the parent (not only after full completion). */
+const startDeeperChapterSchema = z.object({
+  parentRoadmapId: z.string().min(1),
+  nextFocus: z.string().min(1).max(500),
+  buildsOn: z.string().min(1).max(2000),
+  rationale: z.string().min(1).max(2000),
+  roadmapDepth: z.enum(["shallow", "standard", "deep"]),
+  /** New material from the current wizard (merged with parent intent source for the model). */
+  additionalSource: z.string().max(120_000).optional(),
 });
 
 function attachSuggestionSignatures(
@@ -552,8 +623,7 @@ export async function fetchRoadmapContinuationSuggestions(
       const taskParts: string[] = [];
       for (const task of ph.tasks) {
         total++;
-        const st = task.progress[0]?.status;
-        if (st === "COMPLETED") done++;
+        if (isLessonFinishedWithExam(task.progress[0])) done++;
         taskParts.push(task.title);
       }
       lines.push(
@@ -656,17 +726,12 @@ export async function startContinuationFromRoadmap(
     const allTasks = parent.phases.flatMap((p) => p.tasks);
     if (allTasks.length === 0) return { ok: false, error: "EMPTY_ROADMAP" };
     for (const t of allTasks) {
-      if (t.progress[0]?.status !== "COMPLETED") {
+      if (!isLessonFinishedWithExam(t.progress[0])) {
         return { ok: false, error: "JOURNEY_NOT_COMPLETE" };
       }
     }
 
-    const completedSummary = parent.phases
-      .map((ph, pi) => {
-        const tt = ph.tasks.map((task) => task.title).join("; ");
-        return `${pi + 1}. ${ph.title}: ${tt}`;
-      })
-      .join("\n");
+    const completedSummary = buildFullParentTaskSummary(parent);
 
     const continuationFrom = {
       parentRoadmapTitle: parent.title,
@@ -839,6 +904,9 @@ export async function startContinuationFromRoadmap(
               whyMatters: t.whyMatters,
               mentorPerspective: t.mentorPerspective,
               instructions: t.instructions,
+              keyTerms: t.keyTerms,
+              recap: t.recap || null,
+              funFacts: t.funFacts ?? [],
               lessonCategory: t.lessonCategory,
               achievementKeys: t.achievementKeys,
               order: ti,
@@ -904,6 +972,309 @@ export async function startContinuationFromRoadmap(
     }
     const msg =
       e instanceof Error ? e.message : "Could not start continuation.";
+    return { ok: false, error: msg };
+  }
+}
+
+/**
+ * Starts a linked follow-up journey when the new request matches prior learning.
+ * Requires at least one exam-passed lesson on the parent (same link + context pattern as post-completion continuations).
+ */
+export async function startDeeperChapterFromPriorRoadmap(
+  raw: z.infer<typeof startDeeperChapterSchema>,
+): Promise<
+  | { ok: true; roadmapId: string; reused?: boolean }
+  | { ok: false; error: string; roadmapId?: string }
+> {
+  try {
+    const user = await getOrCreateAppUser();
+    const input = startDeeperChapterSchema.parse(raw);
+    const parent = await prisma.roadmap.findFirst({
+      where: { id: input.parentRoadmapId, userId: user.id },
+      include: {
+        learningIntent: true,
+        phases: {
+          orderBy: { order: "asc" },
+          include: {
+            tasks: {
+              orderBy: { order: "asc" },
+              include: {
+                progress: { where: { userId: user.id } },
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!parent) return { ok: false, error: "NOT_FOUND" };
+
+    const sums = buildParentContinuationSummaries(parent);
+    if (sums.totalLessonCount === 0) return { ok: false, error: "EMPTY_ROADMAP" };
+    if (sums.completedLessonCount === 0) {
+      return { ok: false, error: "NO_COMPLETED_LESSONS_ON_PRIOR" };
+    }
+
+    const completedSummary = sums.completedSummary;
+    const notYetCompletedOnPrior = sums.notYetCompletedSummary;
+
+    const continuationFrom: ContinuationFromContext = {
+      parentRoadmapTitle: parent.title,
+      parentGoal: parent.goal,
+      completedSummary,
+      nextFocus: input.nextFocus,
+      buildsOn: input.buildsOn,
+      rationale: input.rationale,
+      notYetCompletedOnPrior,
+    };
+
+    const parentSource = parent.learningIntent?.sourceContent?.trim() ?? "";
+    const extra = input.additionalSource?.trim() ?? "";
+    const baseContent = (() => {
+      if (parentSource && extra) {
+        return `${parentSource}\n\n--- New material for this chapter ---\n\n${extra}`;
+      }
+      if (extra) return extra;
+      if (parentSource) return parentSource;
+      return [
+        "The learner continues from an on-platform journey; rely on completed-work summaries below when the source is thin.",
+        "",
+        "Completed (exam-passed) on prior journey:",
+        completedSummary,
+        notYetCompletedOnPrior ?
+          [
+            "",
+            "Not yet completed on prior journey (do not assume mastery):",
+            notYetCompletedOnPrior,
+          ].join("\n")
+        : "",
+        "",
+        `Topic: ${parent.learningIntent?.topicTitle ?? parent.title}`,
+      ]
+        .filter((s) => s.length > 0)
+        .join("\n");
+    })();
+
+    const shortParent =
+      parent.title.length > 72 ?
+        `${parent.title.slice(0, 72)}…`
+      : parent.title;
+    const topicTitle = `${input.nextFocus} — after “${shortParent}”`;
+
+    const signature = continuationRowSignature({
+      nextFocus: input.nextFocus,
+      buildsOn: input.buildsOn,
+      rationale: input.rationale,
+      roadmapDepth: input.roadmapDepth,
+    });
+
+    const existingChild = await prisma.roadmap.findFirst({
+      where: {
+        userId: user.id,
+        continuedFromRoadmapId: parent.id,
+        continuationSignature: signature,
+      },
+      include: {
+        phases: {
+          orderBy: { order: "asc" },
+          include: {
+            tasks: {
+              orderBy: { order: "asc" },
+              include: {
+                progress: { where: { userId: user.id } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (existingChild) {
+      const { total, completed } = countRoadmapTasks(existingChild);
+      if (total > 0 && completed === total) {
+        revalidatePath(`/roadmap/${parent.id}`);
+        return {
+          ok: false,
+          error: "CONTINUATION_ALREADY_FINISHED",
+          roadmapId: existingChild.id,
+        };
+      }
+      revalidatePath(`/roadmap/${parent.id}`);
+      revalidatePath(`/roadmap/${existingChild.id}`);
+      return { ok: true, roadmapId: existingChild.id, reused: true };
+    }
+
+    const pickJson = {
+      signature,
+      nextFocus: input.nextFocus,
+      buildsOn: input.buildsOn,
+      rationale: input.rationale,
+      roadmapDepth: input.roadmapDepth,
+    };
+
+    const difficulty =
+      sums.allLessonsComplete ?
+        "Continuing from a completed structured path"
+      : "Continuing after partial progress on the prior journey—only completed lessons are mastered.";
+
+    const genInput: RoadmapGenerationInput = {
+      interpretedSubject: input.nextFocus,
+      intentSummary: input.rationale,
+      targetOutcome: `After this journey, the learner can apply: ${input.nextFocus}`,
+      difficulty,
+      scopeSuggestion: `Builds on: ${input.buildsOn}. ${input.rationale}`,
+      recommendedLanguage: parent.language,
+      readingLevel:
+        parent.learningIntent?.experienceLevel ??
+        "Learner continuing from earlier work on this topic",
+      roadmapDepth: input.roadmapDepth,
+      topicTitle,
+      sourceType: (parent.learningIntent?.sourceType as AISource) ?? "TEXT",
+      sourceContent: baseContent.slice(0, 120_000),
+      userGoal: input.nextFocus,
+      continuationFrom,
+    };
+
+    const generated = await generateRoadmap(genInput);
+    const topicNorm = normalizeTopic(topicTitle);
+    const topicClusterKey = inferTopicCluster(input.nextFocus, topicTitle);
+
+    const roadmapId = await prisma.$transaction(async (tx) => {
+      const u = await tx.user.findUnique({
+        where: { id: user.id },
+        select: { id: true, coins: true, plan: true },
+      });
+      if (!u) throw new Error("NO_USER");
+      if (u.plan === "FREE" && u.coins < COIN_START_JOURNEY_FREE) {
+        throw new Error("INSUFFICIENT_COINS");
+      }
+      if (u.plan === "FREE") {
+        await tx.user.update({
+          where: { id: u.id },
+          data: { coins: { decrement: COIN_START_JOURNEY_FREE } },
+        });
+      }
+
+      const intent = await tx.learningIntent.create({
+        data: {
+          userId: user.id,
+          topicTitle,
+          topicNormalized: topicNorm,
+          topicClusterKey,
+          userGoal: input.nextFocus,
+          sourceType: (parent.learningIntent?.sourceType ?? "TEXT") as SourceType,
+          sourceContent: baseContent.slice(0, 120_000),
+          sourceFileName: parent.learningIntent?.sourceFileName,
+          targetLanguage: parent.language,
+          experienceLevel: parent.learningIntent?.experienceLevel,
+        },
+      });
+
+      const roadmap = await tx.roadmap.create({
+        data: {
+          userId: user.id,
+          learningIntentId: intent.id,
+          title: generated.title,
+          description: generated.description,
+          goal: generated.goal,
+          estDurationLabel: generated.estDurationLabel,
+          language: generated.language,
+          status: "ACTIVE",
+          continuedFromRoadmapId: parent.id,
+          continuationSignature: signature,
+          continuationPick: pickJson as unknown as Prisma.InputJsonValue,
+        },
+      });
+
+      const flatTaskIds: string[] = [];
+
+      for (let pi = 0; pi < generated.phases.length; pi++) {
+        const ph = generated.phases[pi];
+        const phase = await tx.roadmapPhase.create({
+          data: {
+            roadmapId: roadmap.id,
+            title: ph.title,
+            summary: ph.summary,
+            order: pi,
+          },
+        });
+        for (let ti = 0; ti < ph.tasks.length; ti++) {
+          const t = ph.tasks[ti];
+          const task = await tx.roadmapTask.create({
+            data: {
+              phaseId: phase.id,
+              title: t.title,
+              explanation: t.explanation,
+              whyMatters: t.whyMatters,
+              mentorPerspective: t.mentorPerspective,
+              instructions: t.instructions,
+              keyTerms: t.keyTerms,
+              recap: t.recap || null,
+              funFacts: t.funFacts ?? [],
+              lessonCategory: t.lessonCategory,
+              achievementKeys: t.achievementKeys,
+              order: ti,
+              xpReward: t.xpReward,
+              estimatedMinutes: t.estimatedMinutes,
+            },
+          });
+          flatTaskIds.push(task.id);
+          for (let ri = 0; ri < t.resources.length; ri++) {
+            const r = t.resources[ri];
+            await tx.taskResource.create({
+              data: {
+                taskId: task.id,
+                title: r.title,
+                url: r.url ?? null,
+                type: r.type,
+                order: ri,
+              },
+            });
+          }
+          await tx.taskEvaluation.create({
+            data: {
+              taskId: task.id,
+              summary: t.evaluation.summary,
+              checklist: [],
+              quizQuestions: t.evaluation.quiz as unknown as Prisma.InputJsonValue,
+              checkpointDescription: t.evaluation.checkpointDescription,
+            },
+          });
+        }
+      }
+
+      for (let i = 0; i < flatTaskIds.length; i++) {
+        await tx.userTaskProgress.create({
+          data: {
+            userId: user.id,
+            taskId: flatTaskIds[i],
+            status: i === 0 ? "AVAILABLE" : "LOCKED",
+          },
+        });
+      }
+
+      return roadmap.id;
+    });
+
+    const { clusters, skills } = collectMilestoneKeysFromGenerated(generated);
+    await ensureClusterMilestoneAchievements(clusters);
+    await ensureSkillMilestoneAchievements(skills);
+
+    revalidatePath("/dashboard");
+    revalidatePath(`/roadmap/${roadmapId}`);
+    revalidatePath(`/roadmap/${parent.id}`);
+    return { ok: true, roadmapId };
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return {
+        ok: false,
+        error: e.issues.map((i) => i.message).join(", "),
+      };
+    }
+    if (e instanceof Error && e.message === "INSUFFICIENT_COINS") {
+      return { ok: false, error: "INSUFFICIENT_COINS" };
+    }
+    const msg =
+      e instanceof Error ? e.message : "Could not start deeper chapter.";
     return { ok: false, error: msg };
   }
 }
@@ -1056,7 +1427,10 @@ export async function markTaskComplete(taskId: string): Promise<
     const quiz = parseTaskQuizQuestions(
       progress.task.evaluation?.quizQuestions,
     );
-    if (quiz.length > 0 && !progress.quizPassedAt) {
+    if (quiz.length === 0) {
+      return { ok: false, error: "EXAM_REQUIRED" };
+    }
+    if (!progress.quizPassedAt) {
       return { ok: false, error: "QUIZ_NOT_PASSED" };
     }
 
@@ -1106,12 +1480,14 @@ export async function markTaskComplete(taskId: string): Promise<
         taskId: { in: phaseTasks.map((t) => t.id) },
       },
     });
-    const phaseDone = phaseProgress.every((p) => p.status === "COMPLETED");
+    const phaseDone = phaseProgress.every((p) =>
+      isLessonFinishedWithExam(p),
+    );
 
     const allProgress = await prisma.userTaskProgress.findMany({
       where: { userId: user.id, task: { phase: { roadmapId } } },
     });
-    const roadmapDone = allProgress.every((p) => p.status === "COMPLETED");
+    const roadmapDone = allProgress.every((p) => isLessonFinishedWithExam(p));
 
     const newAchievements: string[] = [];
     async function grant(slug: string) {
@@ -1132,7 +1508,11 @@ export async function markTaskComplete(taskId: string): Promise<
     }
 
     const completedCount = await prisma.userTaskProgress.count({
-      where: { userId: user.id, status: "COMPLETED" },
+      where: {
+        userId: user.id,
+        status: "COMPLETED",
+        quizPassedAt: { not: null },
+      },
     });
     if (completedCount >= 1) await grant("first_step");
     if (phaseDone) await grant("phase_crusher");
@@ -1158,6 +1538,16 @@ export async function markTaskComplete(taskId: string): Promise<
       if (n >= 2) await grant(skillAchievementSlug(key, "twice"));
       if (n >= 3) await grant(skillAchievementSlug(key, "many"));
     }
+
+    const distinctTopicBuckets = Object.values(perCategory).filter(
+      (n) => n >= 1,
+    ).length;
+    if (distinctTopicBuckets >= 3) await grant("topic_explorer");
+
+    const badgeTotal = await prisma.userAchievement.count({
+      where: { userId: user.id },
+    });
+    if (badgeTotal >= 5) await grant("achievement_fan");
 
     let coinsEarned = 0;
     const wallet = await prisma.user.findUnique({
@@ -1194,7 +1584,9 @@ export async function markTaskComplete(taskId: string): Promise<
         : "task";
 
     revalidatePath("/dashboard");
-    revalidatePath("/dashboard/achievements");
+    revalidatePath("/settings/achievements");
+    revalidatePath("/profile");
+    revalidatePath("/profile/achievements");
     revalidatePath(`/roadmap/${roadmapId}`);
     revalidatePath(`/roadmap/${roadmapId}/task/${taskId}`);
 
@@ -1208,6 +1600,11 @@ export async function markTaskComplete(taskId: string): Promise<
       );
     }
 
+    for (const loc of routing.locales) {
+      const prefix = loc === routing.defaultLocale ? "" : `/${loc}`;
+      revalidatePath(`${prefix}/activities`);
+      revalidatePath(`${prefix}/rankings`);
+    }
     if (user.profilePublic) {
       for (const loc of routing.locales) {
         const prefix = loc === routing.defaultLocale ? "" : `/${loc}`;
@@ -1233,6 +1630,11 @@ export async function markTaskComplete(taskId: string): Promise<
 }
 
 function revalidatePublicLearningPaths(userId: string, profilePublic: boolean) {
+  for (const loc of routing.locales) {
+    const prefix = loc === routing.defaultLocale ? "" : `/${loc}`;
+    revalidatePath(`${prefix}/activities`);
+    revalidatePath(`${prefix}/rankings`);
+  }
   if (!profilePublic) return;
   for (const loc of routing.locales) {
     const prefix = loc === routing.defaultLocale ? "" : `/${loc}`;
@@ -1358,6 +1760,7 @@ export async function askTaskCoach(
     whyMatters: task.whyMatters,
     mentorPerspective: task.mentorPerspective,
     instructions: task.instructions,
+    recap: task.recap,
     resourcesLines,
     evaluationSummary: task.evaluation?.summary ?? null,
     checkpointDescription: task.evaluation?.checkpointDescription ?? null,

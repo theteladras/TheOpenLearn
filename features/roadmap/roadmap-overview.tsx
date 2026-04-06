@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
+import { isLessonFinishedWithExam } from "@/lib/lesson-finished";
 import type { RoadmapViewPhase } from "./roadmap-view";
 
 function scrollToPhase(phaseId: string) {
@@ -42,8 +43,8 @@ export function RoadmapOverview({ phases }: { phases: RoadmapViewPhase[] }) {
         <div className="flex items-stretch gap-0 py-1.5">
           {phases.map((phase, pi) => {
             const n = phase.tasks.length;
-            const done = phase.tasks.filter(
-              (x) => x.status === "COMPLETED",
+            const done = phase.tasks.filter((x) =>
+              isLessonFinishedWithExam(x),
             ).length;
             const complete = n > 0 && done === n;
             const pct = n === 0 ? 0 : Math.round((done / n) * 100);

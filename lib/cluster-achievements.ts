@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { isLessonFinishedWithExam } from "@/lib/lesson-finished";
 import {
   normalizeClusterKey,
   TOPIC_CLUSTER_KEYS,
@@ -75,7 +76,7 @@ export async function countCompletedTasksPerCategory(
           task.lessonCategory ?? journeyCluster,
         );
         const p = task.progress[0];
-        if (p?.status === "COMPLETED") {
+        if (isLessonFinishedWithExam(p)) {
           counts[cat] += 1;
         }
       }

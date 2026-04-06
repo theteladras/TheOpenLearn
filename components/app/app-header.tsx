@@ -34,9 +34,9 @@ export function AppHeader({
   coins: number;
   labels: {
     dashboard: string;
-    achievements: string;
-    community: string;
-    settings: string;
+    activities: string;
+    rankings: string;
+    profile: string;
     menu: string;
     menuTitle: string;
     openWallet: string;
@@ -44,21 +44,25 @@ export function AppHeader({
 }) {
   const pathname = usePathname();
   const nav: NavDef[] = [
-    { href: "/dashboard", label: labels.dashboard, match: ["/dashboard"] },
     {
-      href: "/feed",
-      label: labels.community,
-      match: ["/feed", "/community"],
+      href: "/dashboard",
+      label: labels.dashboard,
+      match: ["/dashboard"],
     },
     {
-      href: "/dashboard/achievements",
-      label: labels.achievements,
-      match: ["/dashboard/achievements"],
+      href: "/activities",
+      label: labels.activities,
+      match: ["/activities", "/feed"],
     },
     {
-      href: "/settings",
-      label: labels.settings,
-      match: ["/settings"],
+      href: "/rankings",
+      label: labels.rankings,
+      match: ["/rankings"],
+    },
+    {
+      href: "/profile",
+      label: labels.profile,
+      match: ["/profile", "/settings"],
     },
   ];
 

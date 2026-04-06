@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { isLessonFinishedWithExam } from "@/lib/lesson-finished";
 import {
   TASK_ACHIEVEMENT_KEYS,
   type TaskAchievementKey,
@@ -69,7 +70,7 @@ export async function countCompletedTasksPerSkillKey(
     for (const ph of r.phases) {
       for (const task of ph.tasks) {
         const p = task.progress[0];
-        if (p?.status !== "COMPLETED") continue;
+        if (!isLessonFinishedWithExam(p)) continue;
         for (const raw of task.achievementKeys) {
           if (!isValidSkillAchievementKeyPart(raw)) continue;
           counts[raw] = (counts[raw] ?? 0) + 1;

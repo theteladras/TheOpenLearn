@@ -14,8 +14,9 @@ export default async function AppLayout({
   const { userId } = await auth();
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "Dashboard" });
-  const tCom = await getTranslations({ locale, namespace: "Community" });
-  const tSettings = await getTranslations({ locale, namespace: "Settings" });
+  const tAct = await getTranslations({ locale, namespace: "Activities" });
+  const tRank = await getTranslations({ locale, namespace: "Rankings" });
+  const tProfile = await getTranslations({ locale, namespace: "Profile" });
 
   if (!userId) {
     redirect({ href: "/sign-in", locale });
@@ -30,9 +31,9 @@ export default async function AppLayout({
         coins={user.coins}
         labels={{
           dashboard: t("title"),
-          achievements: t("achievements"),
-          community: tCom("metaTitle"),
-          settings: tSettings("title"),
+          activities: tAct("navTitle"),
+          rankings: tRank("navTitle"),
+          profile: tProfile("navTitle"),
           menu: t("navMenu"),
           menuTitle: t("navMenuTitle"),
           openWallet: t("openWalletAria"),

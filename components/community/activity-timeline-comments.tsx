@@ -12,13 +12,13 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  addFeedComment,
+  addActivityComment,
   getMyLessonsForReference,
-} from "@/server/actions/feed-comment-actions";
+} from "@/server/actions/activity-comment-actions";
 import { cn } from "@/lib/utils";
 import { Paperclip } from "lucide-react";
 
-export type FeedCommentClientModel = {
+export type ActivityCommentClientModel = {
   id: string;
   body: string;
   rel: string;
@@ -45,7 +45,7 @@ function initials(name: string | null, anon: string): string {
   return s.slice(0, 2).toUpperCase();
 }
 
-export function FeedActivityComments({
+export function ActivityTimelineComments({
   targetKind,
   targetId,
   initialComments,
@@ -55,7 +55,7 @@ export function FeedActivityComments({
 }: {
   targetKind: "TASK_COMPLETION" | "BADGE_EARNED";
   targetId: string;
-  initialComments: FeedCommentClientModel[];
+  initialComments: ActivityCommentClientModel[];
   viewerUserId: string | null;
   anonLabel: string;
   labels: {
@@ -126,7 +126,7 @@ export function FeedActivityComments({
     const trimmed = body.trim();
     if (!trimmed) return;
     startTransition(async () => {
-      const res = await addFeedComment({
+      const res = await addActivityComment({
         targetKind,
         targetId,
         body: trimmed,

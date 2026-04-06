@@ -1,7 +1,13 @@
 /**
- * Fetches a user-provided documentation URL and appends same-site links + a text excerpt
- * for AI analysis. Includes basic SSRF protections for server-side fetch.
+ * Fetches a user-provided URL and appends context for AI analysis: YouTube captions when
+ * applicable, otherwise same-site doc links + a plain-text HTML excerpt. Includes basic
+ * SSRF protections for server-side fetch.
  */
+
+import {
+  parseYouTubeVideoIdFromUrl,
+  tryBuildYouTubeTranscriptAppendix,
+} from "@/lib/youtube-transcript";
 
 const MAX_REDIRECTS = 5;
 const MAX_HTML_BYTES = 1_500_000;
@@ -114,7 +120,7 @@ function sameSiteDocLinks(baseUrl: URL, hrefs: string[]): string[] {
 }
 
 function extractTitle(html: string): string | undefined {
-  const m = /<title[^>]*>\s*([^<]*?)\s*<\/title>/is.exec(html);
+  const m = /<title[^>]*>\s*([^<]*?)\s*<\/title>/i.exec(html);
   const t = m?.[1]?.replace(/\s+/g, " ").trim();
   return t || undefined;
 }
@@ -214,9 +220,19 @@ export async function buildLinkSourceAppendix(primaryUrl: string): Promise<strin
     return "\n[Link enrichment skipped: URL is not an allowed public http(s) address.]";
   }
 
+  const youtubeId = parseYouTubeVideoIdFromUrl(initial);
+  let prefix = "";
+  if (youtubeId) {
+    const yt = await tryBuildYouTubeTranscriptAppendix(initial.href, youtubeId);
+    if (yt.ok) {
+      return yt.appendix;
+    }
+    prefix = yt.failureNote;
+  }
+
   const fetched = await fetchHtmlFollowingRedirects(initial.href);
   if (!fetched.ok) {
-    return `\n[Could not fetch page for related documentation links: ${fetched.reason}]`;
+    return `${prefix}\n[Could not fetch page for related documentation links: ${fetched.reason}]`;
   }
 
   const { html, finalUrl } = fetched;
@@ -245,7 +261,7 @@ export async function buildLinkSourceAppendix(primaryUrl: string): Promise<strin
   lines.push("--- Plain-text excerpt from the page (trimmed) ---");
   lines.push(excerpt);
 
-  return lines.join("\n");
+  return prefix + lines.join("\n");
 }
 
 export function truncatePackedSource(content: string, max = PACKED_SOURCE_MAX): string {

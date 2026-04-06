@@ -235,7 +235,43 @@ export async function getCommunityActivityFeed(opts: {
       : Promise.resolve([]),
   ]);
 
-  const items: CommunityActivityItem[] = [
+  const publicItems = rowsToActivityItems(tasks, badges);
+
+  /** Viewer always sees their own completions/badges here, even with a private profile. */
+  let viewerItems: CommunityActivityItem[] = [];
+  if (opts.viewerAppUserId) {
+    viewerItems = await fetchActivityItemsForSingleUser({
+      userId: opts.viewerAppUserId,
+      kind: opts.kind,
+      take,
+    });
+  }
+
+  return mergeActivityItemsByRecency(viewerItems, publicItems, limit);
+}
+
+function rowsToActivityItems(
+  tasks: {
+    id: string;
+    completedAt: Date | null;
+    feedCaption: string | null;
+    userId: string;
+    user: { displayName: string | null };
+    task: {
+      id: string;
+      title: string;
+      phase: { roadmap: { id: string; title: string } };
+    };
+  }[],
+  badges: {
+    id: string;
+    earnedAt: Date;
+    userId: string;
+    user: { displayName: string | null };
+    achievement: { title: string; icon: string | null };
+  }[],
+): CommunityActivityItem[] {
+  return [
     ...tasks
       .filter((row) => row.completedAt != null)
       .map((row) => ({
@@ -260,9 +296,93 @@ export async function getCommunityActivityFeed(opts: {
       userAchievementId: row.id,
     })),
   ];
+}
 
-  items.sort((a, b) => b.at.getTime() - a.at.getTime());
-  return items.slice(0, limit);
+async function fetchActivityItemsForSingleUser(opts: {
+  userId: string;
+  kind: CommunityFeedKind;
+  take: number;
+}): Promise<CommunityActivityItem[]> {
+  const wantTasks = opts.kind !== "badge";
+  const wantBadges = opts.kind !== "task";
+
+  const [tasks, badges] = await Promise.all([
+    wantTasks
+      ? prisma.userTaskProgress.findMany({
+          where: {
+            userId: opts.userId,
+            status: "COMPLETED",
+            completedAt: { not: null },
+          },
+          orderBy: { completedAt: "desc" },
+          take: opts.take,
+          select: {
+            id: true,
+            completedAt: true,
+            feedCaption: true,
+            userId: true,
+            user: { select: { displayName: true } },
+            task: {
+              select: {
+                id: true,
+                title: true,
+                phase: {
+                  select: {
+                    roadmap: { select: { id: true, title: true } },
+                  },
+                },
+              },
+            },
+          },
+        })
+      : Promise.resolve([]),
+    wantBadges
+      ? prisma.userAchievement.findMany({
+          where: { userId: opts.userId },
+          orderBy: { earnedAt: "desc" },
+          take: opts.take,
+          select: {
+            id: true,
+            earnedAt: true,
+            userId: true,
+            user: { select: { displayName: true } },
+            achievement: { select: { title: true, icon: true } },
+          },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  return rowsToActivityItems(tasks, badges);
+}
+
+function itemDedupeKey(item: CommunityActivityItem): string {
+  return item.kind === "task"
+    ? `task:${item.progressId}`
+    : `badge:${item.userAchievementId}`;
+}
+
+/** Merges lists; primary rows win on duplicate keys so display names stay consistent. */
+function mergeActivityItemsByRecency(
+  primary: CommunityActivityItem[],
+  secondary: CommunityActivityItem[],
+  limit: number,
+): CommunityActivityItem[] {
+  const seen = new Set<string>();
+  const out: CommunityActivityItem[] = [];
+  for (const item of primary) {
+    const k = itemDedupeKey(item);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(item);
+  }
+  for (const item of secondary) {
+    const k = itemDedupeKey(item);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(item);
+  }
+  out.sort((a, b) => b.at.getTime() - a.at.getTime());
+  return out.slice(0, limit);
 }
 
 /** @deprecated Prefer getCommunityActivityFeed */

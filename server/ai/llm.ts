@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { resolveTaskEstimatedMinutes } from "@/lib/lesson-time-estimate";
+import {
+  lessonHandbookDocSchema,
+  type LessonHandbookDoc,
+  type LessonHandbookLLMInput,
+} from "@/server/ai/lesson-handbook-schema";
+import { resolveTaskLessonMinutes } from "@/lib/lesson-time-estimate";
 import { normalizeTaskAchievementKeysExtended } from "@/lib/task-achievement-keys";
 import { normalizeClusterKey } from "@/lib/topic-cluster";
 import type {
@@ -132,6 +137,43 @@ const generatedTaskSchema = z.object({
   whyMatters: modelString,
   mentorPerspective: modelString,
   instructions: modelString,
+  keyTerms: z
+    .array(z.string())
+    .max(12)
+    .nullish()
+    .transform((arr) =>
+      (arr ?? [])
+        .map((s) => (typeof s === "string" ? s.trim() : ""))
+        .filter(Boolean)
+        .slice(0, 12),
+    ),
+  recap: z
+    .preprocess(
+      (val) =>
+        val === undefined || val === null ? "" : normalizeModelString(val),
+      z.string(),
+    )
+    .transform((s) => s.trim()),
+  funFacts: z
+    .preprocess((val) => {
+      if (val === undefined || val === null) return [];
+      if (Array.isArray(val)) {
+        return val.flatMap((item) => {
+          if (typeof item === "string") return [normalizeModelString(item)];
+          if (Array.isArray(item))
+            return item.map((x) => normalizeModelString(x));
+          return [];
+        });
+      }
+      const one = normalizeModelString(val);
+      return one ? [one] : [];
+    }, z.array(z.string()))
+    .transform((arr) =>
+      arr
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0)
+        .slice(0, 3),
+    ),
   lessonCategory: z
     .preprocess(
       (val) =>
@@ -180,6 +222,47 @@ const generatedRoadmapSchema = z.object({
 
 type ParsedGeneratedRoadmap = z.infer<typeof generatedRoadmapSchema>;
 
+function dedupeTaskResources<
+  R extends { url?: string | null; type: string; title: string },
+>(resources: R[]): R[] {
+  const seen = new Set<string>();
+  return resources.filter((r) => {
+    const u = (r.url ?? "").trim();
+    if (!u) return true;
+    const key = u.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/** First generic link is labeled primary for the UI when the model omitted a role. */
+function tagResourceRoles<
+  R extends { url?: string | null; type: string; title: string },
+>(resources: R[]): R[] {
+  return resources.map((r, i) => {
+    if (i !== 0) return r;
+    const typ = (r.type ?? "").trim().toLowerCase();
+    if (typ === "" || typ === "link" || typ === "other") {
+      return { ...r, type: "primary" };
+    }
+    return r;
+  });
+}
+
+function normalizeParsedRoadmap(r: ParsedGeneratedRoadmap): ParsedGeneratedRoadmap {
+  return {
+    ...r,
+    phases: r.phases.map((ph) => ({
+      ...ph,
+      tasks: ph.tasks.map((t) => ({
+        ...t,
+        resources: tagResourceRoles(dedupeTaskResources(t.resources)),
+      })),
+    })),
+  };
+}
+
 function withResolvedLessonTimes(roadmap: ParsedGeneratedRoadmap): GeneratedRoadmap {
   return {
     ...roadmap,
@@ -187,11 +270,16 @@ function withResolvedLessonTimes(roadmap: ParsedGeneratedRoadmap): GeneratedRoad
       ...ph,
       tasks: ph.tasks.map((t) => ({
         ...t,
-        estimatedMinutes: resolveTaskEstimatedMinutes(
-          t.estimatedMinutes,
-          t.xpReward,
-          t.evaluation.quiz.length,
-        ),
+        estimatedMinutes: resolveTaskLessonMinutes({
+          explanation: t.explanation,
+          mentorPerspective: t.mentorPerspective,
+          instructions: t.instructions,
+          whyMatters: t.whyMatters,
+          quizCount: t.evaluation.quiz.length,
+          resourceCount: t.resources.length,
+          storedEstimatedMinutes: t.estimatedMinutes,
+          xpReward: t.xpReward,
+        }),
       })),
     })),
   };
@@ -425,6 +513,7 @@ export type TaskCoachLLMInput = {
   whyMatters: string | null;
   mentorPerspective: string | null;
   instructions: string | null;
+  recap: string | null;
   resourcesLines: string;
   evaluationSummary: string | null;
   checkpointDescription: string | null;
@@ -461,6 +550,9 @@ export async function coachTaskWithProvider(
     "",
     "## Instructions",
     input.instructions?.trim() || "(none)",
+    "",
+    "## Recap (takeaways for this lesson)",
+    input.recap?.trim() || "(none)",
     "",
     "## Resources",
     input.resourcesLines.trim() || "(none listed)",
@@ -501,7 +593,73 @@ export async function coachTaskWithProvider(
   return anthropicCompleteChat(system, anthMessages);
 }
 
-const ANALYSIS_SYSTEM = `You are an expert learning designer. Given a learner's source material (link text, pasted notes, or upload summary), you propose one or more focused learning journeys.
+const LESSON_HANDBOOK_SYSTEM = `You are a learning writer. The learner finished this lesson (including its self-check). Produce a **personal reference handbook** they can keep as a PDF: concise, accurate to the lesson context only.
+
+Rules:
+- Use ONLY the task context. Do not invent facts, URLs, or resources not implied by context.
+- Do **not** include multiple-choice questions, answers, or quiz spoilers.
+- **title**: a clear handbook title (may match or slightly extend the lesson title).
+- **subtitle**: optional one-line scope (e.g. the journey / roadmap title).
+- **sections**: 4–7 sections with **heading** + **body**. Bodies: plain language; short paragraphs or tight bullets; you may use markdown **bold** in body strings sparingly.
+- Include: core ideas, how they fit together, common pitfalls, practical “when to use this”, and one **review** section with memory prompts (no answers spelled out if they duplicate quiz facts—use open prompts).
+- **quickReference**: 5–10 ultra-short bullets (terms, checkpoints, or reminders) for a one-screen skim.
+
+Return ONLY one JSON object with keys: title, optional subtitle, sections (array of {heading, body}), quickReference (array of strings).`;
+
+export async function generateLessonHandbookWithProvider(
+  provider: "openai" | "anthropic",
+  input: LessonHandbookLLMInput,
+): Promise<LessonHandbookDoc> {
+  const skillLine =
+    input.achievementKeys.length > 0 ?
+      input.achievementKeys.join(", ")
+    : "(none — generic lesson)";
+  const ctxParts = [
+    `Roadmap: ${input.roadmapTitle}`,
+    `Lesson category (subject bucket): ${input.lessonCategory}`,
+    `Skill / stack tags: ${skillLine}`,
+    `Task: ${input.taskTitle}`,
+    "The learner completed this lesson and passed the self-check.",
+    "",
+    "## Overview",
+    input.explanation?.trim() || "(none)",
+    "",
+    "## Why this matters",
+    input.whyMatters?.trim() || "(none)",
+    "",
+    "## From your guide",
+    input.mentorPerspective?.trim() || "(none)",
+    "",
+    "## Instructions",
+    input.instructions?.trim() || "(none)",
+    "",
+    "## Recap (takeaways)",
+    input.recap?.trim() || "(none)",
+    "",
+    "## Resources",
+    input.resourcesLines.trim() || "(none listed)",
+    "",
+    "## Self-check summary (concepts only — not questions)",
+    input.evaluationSummary?.trim() || "(none)",
+    "",
+    "## Checkpoint / extra hints",
+    input.checkpointDescription?.trim() || "(none)",
+  ];
+  const contextBlock = truncateMiddle(ctxParts.join("\n"), 14_000);
+  const userMsg = [
+    "Create the handbook JSON as specified.",
+    "",
+    "---",
+    "TASK CONTEXT:",
+    contextBlock,
+  ].join("\n");
+  const raw = await completeJson(provider, LESSON_HANDBOOK_SYSTEM, userMsg);
+  return parseJson(raw, lessonHandbookDocSchema, "Lesson handbook");
+}
+
+const ANALYSIS_SYSTEM = `You are an expert learning designer. The product exists to help someone **reach real mastery**—understanding deep enough to **use the knowledge reliably** and **teach or explain it clearly** to someone else (Feynman-level clarity), not to tick boxes.
+
+Given a learner's source material (link text, pasted notes, or upload summary), you propose one or more focused learning journeys.
 
 Return a single JSON object with this shape:
 {
@@ -539,33 +697,42 @@ Rules:
 - If there is an alignment transcript, prefer raising roadmapDepth to "deep" and expanding sourceFocus when the learner asked for comprehensive / job-ready / full-framework coverage.
 - recommendedLanguage should follow the learner's target language when implied; else use a sensible default.
 - roadmapDepth in each proposal: shallow = quick overview; standard = typical course; deep = thorough mastery path (use for encyclopedic sources when goals warrant it).
+- **targetOutcome** and **intentSummary** should imply **demonstrable skill**: what they can *do* or *teach* after the journey, not vague “awareness” unless shallow depth was explicitly chosen.
 `;
 
-const ROADMAP_SYSTEM = `You are an expert learning designer. Build a structured roadmap as JSON for a single learning journey.
+const ROADMAP_SYSTEM = `You are an expert learning designer. **Purpose:** help the learner become **confidently capable** in this subject—able to apply it and **explain it effectively** (e.g. to a peer), not merely finish tasks. Every lesson you write should be **self-contained for its stated objective**: nothing required for the quiz or hands-on should be missing from the teaching blocks for that task.
+
+Build a structured roadmap as JSON for a single learning journey.
 
 Return ONLY JSON with this exact structure:
 {
   "title": "string",
-  "description": "2–4 sentences markdown OK",
+  "description": "2–4 sentences markdown OK — may briefly note that phases are **modules** in a **recommended** order, and when the topic allows **alternative entry or parallel tracks**, say so here (learner may adapt order at their own risk)",
   "goal": "single outcome sentence",
   "estDurationLabel": "human estimate e.g. 2–3 weeks · ~5 hrs/week (must match task scope; see Rules)",
   "language": "BCP-47 code",
   "phases": [
     {
       "title": "phase name",
-      "summary": "one sentence",
+      "summary": "one or two sentences: what this module achieves +, when natural for the subject, whether it can be **started out of sequence** or **in parallel** with another phase once named prerequisites are met (name those prerequisites explicitly)",
       "tasks": [
         {
           "title": "task title",
           "explanation": "markdown — the Overview mini-lesson (see Pedagogy rules below)",
           "whyMatters": "markdown",
-          "mentorPerspective": "markdown — 2–4 short paragraphs as an expert coach: name specific doc areas/sections when the source is a well-known site (e.g. Vercel: Projects, env vars, deployments); what to skim vs read deeply; one common pitfall; what 'done' looks like. Never only say 'visit the link' without this substance.",
-          "instructions": "markdown — concrete hands-on steps only; learners already have concepts and examples from explanation",
-          "lessonCategory": "general | mathematics | life-sciences | physical-sciences | computing | technology | design | languages | business | arts-humanities | health-wellbeing",
+          "mentorPerspective": "markdown — linear walkthrough ONLY: 3–6 segments, each starting with an h2 heading on its own line: ## First idea … ## Next idea … Write in a clear, conversational tone (like a patient tutor going step by step). Each segment connects to the next; use relatable framing and plain language. When sources are well-known sites, name concrete sections to open. Include one pitfall and what “done” looks like inside this flow—not as a separate meta lecture. Never output only “visit the link”.",
+          "instructions": "markdown — concrete hands-on steps only (numbered or bullets). No repeating the conceptual walkthrough from mentorPerspective.",
+          "keyTerms": ["4–10 short phrases (2–5 words each): vocabulary and proper nouns the learner will see in this task—no duplicates; no generic words like “important” or “chapter”"],
+          "recap": "markdown — 3–6 tight bullets (or one short paragraph): what the learner should remember or be able to do after this task—durable takeaways only; not a repeat of the Overview",
+          "funFacts": [ "plain text — memorable bonus fact about THIS task’s topic or a closely related curiosity", "plain text — second fact (history, industry pattern, learning angle, or counterintuitive detail—NOT a quiz spoiler)", "optional third plain-text fact" ],
+          "lessonCategory": "general | mathematics | life-sciences | physical-sciences | computing | technology | design | languages | business | arts-humanities | health-wellbeing  (canonical slugs only; examples → biology/neuroscience/ecology → life-sciences; chemistry/physics/astronomy → physical-sciences; politics/civics/music/film/history/law/psychology → arts-humanities; marketing/finance/economics/entrepreneurship → business)",
           "achievementKeys": ["0–3 snake_case skill slugs, or []"],
           "xpReward": 30,
           "estimatedMinutes": 60,
-          "resources": [ { "title": "string", "url": "https optional", "type": "link|doc|video|other" } ],
+          "resources": [
+            { "title": "primary — best URL for this task", "url": "https required when you have one", "type": "primary" },
+            { "title": "alternate — different angle (video, simpler explainer, official ref…)", "url": "https", "type": "alternate | video | article | doc | other" }
+          ],
           "evaluation": {
             "summary": "markdown — one short line framing the self-check",
             "quiz": [
@@ -586,7 +753,20 @@ Return ONLY JSON with this exact structure:
 The JSON skeleton shows one quiz item for brevity only; each real task’s evaluation.quiz array must contain **between 1 and 5** full question objects following the rules below (length varies per task).
 
 Rules:
-- estimatedMinutes (required on every task): integer **active learning minutes** for one focused sitting—reading the Overview, executing instructions (including typing/building), using resources as implied, and finishing the quiz. Judge pace using the learner’s **difficulty** and **readingLevel** from the input understanding. Bands (flexible): tight checkpoint **20–40**; typical lesson **40–95**; dense, multi-part, or capstone **95–200**. Minutes must rise with real heft: longer teaching in explanation, more instruction steps, more quiz items, and higher xpReward should all push the number up—not a flat constant across tasks.
+- **Mastery & completeness (every task):**
+  - Treat each task as a **complete learning unit** for its title: every idea the learner must hold to pass the quiz and do the steps must appear in **explanation**, **mentorPerspective**, and/or **whyMatters**—not only in external links. Links deepen; they must not be the sole source of required understanding.
+  - If something is assumed from **earlier in this same journey**, name it in **explanation** in one short line (e.g. “**Builds on:** … from the previous task”) so a learner who revisits or reorders has a hook.
+  - **Quiz alignment:** each question must test **only** concepts or procedures **taught in this task** (or explicitly cited as build-on from earlier tasks). No “guess what I’m thinking”; no trivia not grounded in the lesson bodies.
+  - **Teach-back:** in **recap**, include **one bullet** framed as what the learner could **explain to someone else in a sentence** (concrete, not “I understand X”).
+- **Phases as modules:** The **array order** of phases is the **recommended** learning path. Design phases so each phase has a **coherent theme**; where the domain has **independent pillars** (e.g. separate toolchains, parallel topics), you may split them into phases that **could** be approached in a different order—**say so in that phase’s summary** and in **roadmap.description**, and cross-link in tasks (“If you skipped phase …, read … first”).
+- **Deep journeys:** Prefer **misconceptions**, **edge cases**, and **“when this breaks”** in standard/deep depth so mastery is honest—not only happy paths.
+- estimatedMinutes (required on every task): integer **active learning minutes** for ONE sitting with THIS task only. Do **not** reuse a default like 45 or 60 across lessons. Derive it as a tight sum (then round to the nearest integer):
+  (a) **Read/teach**: combine word count of explanation + whyMatters + mentorPerspective; at **difficulty/readingLevel** from the understanding block, use roughly **110–160 words/min** for study-style reading (slower for dense or beginner text). Cap this term around **95** minutes.
+  (b) **Hands-on**: count real instruction steps (numbered/bulleted items); **~3.5–5.5 minutes** per non-trivial step (typing, building, exercises). Cap around **110** minutes.
+  (c) **Quiz**: **~2.5–3.5 minutes** per question.
+  (d) **Resources**: add **~8–12 minutes** to skim/consult the **primary** link; **+4–7 minutes** per **additional** alternate link (partial overlap with reading is OK—keep the sum honest, not inflated).
+  Add (a)+(b)+(c)+(d), clamp to **12–400**. Adjacent tasks with very different workloads MUST get visibly different totals—never round everything to the same multiple of 15 unless the sums truly match.
+- resources (required on every task): **2–5** objects whenever you can justify it. **First** entry: **type** \`"primary"\` — the single best match from **sourceContent** (or the canonical doc you cite). **One or more further entries** with **type** \`"alternate"\` / \`"video"\` / \`"article"\` / \`"doc"\` — a **genuinely different** useful link (different modality, depth, audience, or official vs tutorial). Do **not** duplicate URLs; do **not** invent domains you are unsure about—prefer real URLs present in the source or well-known public docs. If the source truly supplies only one URL, still add a second entry when you know a standard reference (e.g. MDN, Wikipedia, official docs home) that fits; otherwise two entries may share relevance through title but omit url only as a last resort.
 - Cross-check: Sum all task **estimatedMinutes**. That total (total active minutes) should be broadly consistent with **estDurationLabel** when interpreted as committed learning time (e.g. “~5 hrs/week for 3 weeks” ≈ **900** active minutes—your per-task sums should land in the same order of magnitude unless the label deliberately emphasizes calendar spread over seat time; if so, say so in the label).
 - estDurationLabel: Choose weeks and hrs/week so their product fits the real scope of THIS roadmap’s phases and tasks. Very small roadmaps (e.g. a few compact tasks) should use shorter timelines at typical weekly hours; deep roadmaps with many substantial tasks need proportionally more. Never reuse example numbers when they disagree with how large or small the task list is.
 - Phase and task counts MUST follow roadmapDepth from the input understanding (not one-size-fits-all):
@@ -595,15 +775,17 @@ Rules:
   - deep: 6–10 phases, 4–7 tasks per phase when the subject is a large framework, language, or doc site; otherwise 5–8 phases, 3–6 tasks per phase.
 - Each task must be actionable. Name specific doc pages, guides, or concepts where the source is a well-known site.
 - xpReward: integers 20–70 typical; boss tasks up to 90.
-- lessonCategory (required on every task): pick exactly ONE bucket for that task’s primary skill—general, mathematics, life-sciences, physical-sciences, computing, technology, design, languages, business, arts-humanities, health-wellbeing. Use the best fit for the lesson itself (tasks in the same roadmap may differ, e.g. one “setup IDE” → computing, one “study chord progressions” → arts-humanities).
+- lessonCategory (required on every task): pick exactly ONE **canonical** slug from: general, mathematics, life-sciences, physical-sciences, computing, technology, design, languages, business, arts-humanities, health-wellbeing. Map the lesson’s real subject into these buckets (never invent new category names): e.g. biology/botany/genetics/neuroscience/medicine basics → **life-sciences**; chemistry/physics/astronomy → **physical-sciences**; programming/software → **computing**; cloud/security/ML platforms → **technology**; UX/UI/figma/visual product → **design**; languages/linguistics → **languages**; marketing/sales/finance/business strategy → **business**; politics/civics/music/film/history/philosophy/journalism/law (non-corporate)/sociology → **arts-humanities**; clinical health/nutrition/fitness therapy focus → **health-wellbeing**. Tasks in one roadmap may use different buckets when subjects differ.
 - achievementKeys (required on every task): JSON array of **0 to 3** lowercase **snake_case** strings (letters, digits, underscore; must start with a letter), each naming one concrete skill practiced **in this task**. Prefer known tags when they fit: react, nextjs, vue, svelte, angular, javascript, typescript, html_css, tailwindcss, nodejs, python, rust, go, java, csharp, sql, graphql, docker, kubernetes, aws, figma, music_theory, writing, public_speaking, data_analysis, machine_learning. If the lesson centers on another stack (e.g. kotlin, swiftui, postgres), you may use a **new** slug matching that pattern (the app will register milestones automatically). Use [] when the lesson is broad or not tied to a specific track—do not add vague tags.
 - Tie tasks to the supplied source and understanding; cite URLs from the source when present.
-- Every task MUST include mentorPerspective with real navigational and conceptual guidance (not generic filler).
+- Every task MUST include mentorPerspective as a segmented walkthrough (see JSON shape) with real substance—not generic filler. Every task MUST include keyTerms with 4–10 distinct, task-specific phrases. Every task MUST include **recap** with **3–6** substantive bullets (or one short paragraph)—see Pedagogy; never empty or filler.
+- **funFacts** (required on every task): JSON array of **2–3** short **plain-text** strings (no markdown). Each is a memorable “did you know” tied to this task’s domain—history, real-world use, a sharp analogy, or a learning-science tidbit **relevant to the subject**. Must **not** reveal quiz answers, restate recap bullets verbatim, or contradict the lesson. Language must match the journey.
 - evaluation.quiz: **1–5** question objects per task. **Vary the array length across tasks** in the roadmap—do not use the same count for every task (never “always two”). Use **1** for a narrow or warmup checkpoint; **2–3** for a typical lesson task; **4–5** when the task synthesizes several concepts or roadmapDepth is deep. Each question: one unambiguous correctIndex; at least two distinct choices; stems and distractors specific to this task—no generic literacy fluff.
 - language must match the journey (from input).
 
 Pedagogy — explanation field (Overview) for EVERY task, all subjects:
 - This is the primary teaching block. Never replace it with a single sentence, a restatement of the title only, or vague filler.
+- Write so the learner could **re-teach** the core idea: plain language, precise terms, and a clear **because / therefore** chain—not slogan summaries.
 - Define the core ideas, jargon, or constructs the task title and instructions depend on (e.g. if the task is about “components”, “entropy”, or “JOIN”, explain what that means in this context before expecting the learner to act).
 - Depth floor: the Overview should read as a **real mini-lesson**—substantially more than two short paragraphs. For **standard** or **deep** roadmapDepth, prefer **4–8** short sections or well-developed blocks (headings, lists, example) so a newcomer can study only this field and grasp the task.
 - Include at least one concrete illustration:
@@ -613,9 +795,11 @@ Pedagogy — explanation field (Overview) for EVERY task, all subjects:
 - Use brief markdown structure when it helps: e.g. short headings (**What is X?**, **Example**, **How this ties to your task**).
 - Aim for enough depth that someone new to this task could read only the Overview and understand what they are doing and why—without repeating the entire instructions section.
 - **whyMatters**: minimum **two sentences** that tie this step to the journey outcome—no one-line platitudes.
-- **instructions**: concrete procedural steps only. For **standard** or **deep** journeys, prefer **4–10** numbered or bulleted steps unless the task is an intentional micro-checkpoint (then fewer is OK, but state the quick win clearly).
-- **mentorPerspective**: for **deep** roadmaps, be extra explicit—name doc sections, compare approaches, note tradeoffs, and spell out what “done” looks like.
-- instructions should stay procedural (step list); do not move all teaching into instructions—keep conceptual teaching in explanation.
+- **instructions**: concrete procedural steps only—hands-on checklist style. For **standard** or **deep** journeys, prefer **4–10** numbered or bulleted steps unless the task is a micro-checkpoint (then fewer is OK; state the quick win). Do not restate the walkthrough from mentorPerspective here.
+- **mentorPerspective**: the learner-facing “topic path”—not admin instructions. Use **##** headings for each segment; build ideas in order; for **deep** roadmaps, name doc sections, compare approaches, and note tradeoffs inside those segments.
+- **keyTerms**: proper nouns, technical terms, and named models or ideologies that appear in this task—usable as encyclopedia search queries.
+- **recap**: end-of-lesson memory anchor—**3–6** bullets (preferred) or one tight paragraph. Each point should be **specific** to this task: ideas, distinctions, or skills to retain—not generic study tips, not a copy of the Overview, not “you learned about X”. Start bullets with strong verbs or crisp noun phrases when possible. **Include exactly one teach-back bullet** (see Rules: mastery & completeness).
+- instructions should stay procedural (step list); conceptual teaching stays in explanation; the walkthrough bridges explanation → action without duplicating the Overview essay.
 `;
 
 const CONTINUATION_SUGGESTIONS_SYSTEM = `You suggest logical next learning paths after a learner completed an entire roadmap on a learning app.
@@ -715,13 +899,22 @@ export async function generateRoadmapWithProvider(
   const continuationBlock = cont
     ? [
         "---",
-        "CONTINUATION (mandatory): The learner finished a prior journey in this app. You MUST:",
-        "- Start description with one short sentence that names the prior journey and states this path continues from it.",
-        "- Phase 1 should bridge from their completed work — reference buildsOn; do not re-teach what they already completed.",
-        "- Increase depth appropriately; avoid duplicating task titles from the completion summary.",
+        "CONTINUATION (mandatory): The learner has a prior journey in this app. You MUST:",
+        "- Start **description** with one short sentence naming the **prior journey title** and stating this path is the **next chapter** (linked learning), not a restart.",
+        "- Across **phases** and **tasks**: reference the prior journey by title in **at least two** natural places (e.g. phase summary + one task overview), so chapters feel explicitly linked.",
+        "- In each task **explanation** (Overview): when useful, add one line **Prior chapter:** what they should already know from the completed summary below (do not repeat long teaching—point to the idea).",
+        "- Phase 1 must bridge from **completedSummary** (mastered lessons only). Do not re-teach those topics unless a one-line reminder is needed for the new depth.",
+        "- Increase depth, edge cases, and integration vs the prior chapter; **avoid duplicating task titles** from the completion summary.",
+        cont.notYetCompletedOnPrior ?
+          [
+            "They have NOT yet finished everything on the prior journey. **notYetCompleted** lists open lessons—treat these as **not mastered**; you may optionally position a task as preparation for those gaps, but do not assume they did them.",
+            "notYetCompleted:",
+            cont.notYetCompletedOnPrior,
+          ].join("\n")
+        : null,
         `Prior journey title: ${cont.parentRoadmapTitle}`,
         cont.parentGoal ? `Prior learning goal: ${cont.parentGoal}` : null,
-        "They completed:",
+        "They have completed (exam-passed) at least:",
         cont.completedSummary,
         `Learner-chosen next focus: ${cont.nextFocus}`,
         `Builds on (must inform sequencing): ${cont.buildsOn}`,
@@ -758,11 +951,18 @@ export async function generateRoadmapWithProvider(
       "",
       userBits,
       "",
+      "Design for **mastery and teach-back** (see system Rules): no quiz-only gaps; each task’s teaching blocks carry the understanding required for that task.",
+      "Phases: recommended order = JSON array order; use **phase summaries** and **description** to note **reorder / parallel** options only when the subject truly supports it.",
       "Per task, set evaluation.quiz to 1–5 questions and vary the count across tasks (mix of 1s, 2s, 3s, and occasional 4–5 for dense or capstone steps). Avoid giving every task the same number of questions.",
-      "Every task object MUST include estimatedMinutes (integer, see Rules).",
+      "Every task object MUST include estimatedMinutes (integer) computed from THAT task’s explanation, walkthrough, instruction steps, quiz length, and resource count—see Rules (no generic round numbers shared across tasks).",
+      "Every task MUST include at least two resources when possible: primary + alternate URLs (see Rules).",
+      "Every task MUST include a non-empty recap (see Pedagogy), including the **teach-back** bullet.",
+      "Every task MUST include funFacts: **2–3** plain-text strings—sidebar bonus facts; not quiz spoilers (see Rules).",
     ].join("\n"),
   );
-  const parsed = parseJson(raw, generatedRoadmapSchema, "Roadmap generation");
+  const parsed = normalizeParsedRoadmap(
+    parseJson(raw, generatedRoadmapSchema, "Roadmap generation"),
+  );
   const descLead = cont
     ? `*Continues from “${cont.parentRoadmapTitle}.”*\n\n`
     : "";

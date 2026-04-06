@@ -11,6 +11,8 @@ const schema = z.object({ targetUserId: z.string().min(1) });
 function revalidateFollowPaths(profileUserId: string, viewerId: string) {
   for (const loc of routing.locales) {
     const prefix = loc === routing.defaultLocale ? "" : `/${loc}`;
+    revalidatePath(`${prefix}/activities`);
+    revalidatePath(`${prefix}/rankings`);
     revalidatePath(`${prefix}/feed`);
     revalidatePath(`${prefix}/community/u/${profileUserId}`);
     revalidatePath(`${prefix}/community/u/${profileUserId}/followers`);

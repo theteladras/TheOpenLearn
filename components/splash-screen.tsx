@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useLayoutEffect, useState } from "react";
 
 const STORAGE_KEY = "openlearn-splash-dismissed";
-const MIN_MS = 900;
+const MIN_MS = 1000;
 const FADE_MS = 420;
 
 export function SplashScreen() {

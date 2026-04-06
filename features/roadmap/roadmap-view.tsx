@@ -14,11 +14,14 @@ import {
 } from "./roadmap-continuation-panel";
 import { RoadmapOverview } from "./roadmap-overview";
 import { TaskAchievementChips } from "./task-achievement-chips";
+import { isLessonFinishedWithExam } from "@/lib/lesson-finished";
 
 export type RoadmapViewTask = {
   id: string;
   title: string;
   status: TaskProgressState;
+  /** Set when the learner passed the lesson exam (required for full completion). */
+  quizPassedAt: string | null;
   order: number;
   /** Skill-track tags from generation (e.g. react). */
   achievementKeys: string[];
@@ -46,6 +49,8 @@ type Props = {
   activeTimeHoursRounded: number;
   phases: RoadmapViewPhase[];
   continuedFrom?: { id: string; title: string } | null;
+  /** Child journeys linked via `continuedFromRoadmapId`. */
+  followUpChapters?: { id: string; title: string }[];
 };
 
 export function RoadmapView({
@@ -58,6 +63,7 @@ export function RoadmapView({
   activeTimeHoursRounded,
   phases,
   continuedFrom,
+  followUpChapters = [],
 }: Props) {
   const t = useTranslations("Roadmap");
   const tTask = useTranslations("Task");
@@ -67,7 +73,7 @@ export function RoadmapView({
   for (const p of phases) {
     for (const task of p.tasks) {
       total++;
-      if (task.status === "COMPLETED") done++;
+      if (isLessonFinishedWithExam(task)) done++;
     }
   }
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
@@ -94,6 +100,33 @@ export function RoadmapView({
       </div>
 
       {continuedFrom ? <ContinuedFromBanner parent={continuedFrom} /> : null}
+
+      {followUpChapters.length > 0 ? (
+        <Card className="border-[var(--border)] bg-[var(--card)]">
+          <CardHeader className="py-4">
+            <CardTitle className="text-sm font-medium">
+              {t("followUpChapters")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 pt-0">
+            <p className="text-xs text-[var(--muted)]">
+              {t("followUpChaptersHint")}
+            </p>
+            <ul className="list-inside list-disc space-y-1 text-sm">
+              {followUpChapters.map((ch) => (
+                <li key={ch.id}>
+                  <Link
+                    href={`/roadmap/${ch.id}`}
+                    className="text-[var(--accent)] underline underline-offset-2"
+                  >
+                    {ch.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <RoadmapOverview phases={phases} />
 
@@ -125,8 +158,8 @@ export function RoadmapView({
       <div className="space-y-10">
         {phases.map((phase, pi) => {
           const phaseTasks = phase.tasks.length;
-          const phaseDone = phase.tasks.filter(
-            (x) => x.status === "COMPLETED",
+          const phaseDone = phase.tasks.filter((x) =>
+            isLessonFinishedWithExam(x),
           ).length;
           const phaseComplete = phaseTasks > 0 && phaseDone === phaseTasks;
           return (
@@ -160,78 +193,84 @@ export function RoadmapView({
                 )}
               </div>
               <div className="grid gap-3 pl-11">
-                {phase.tasks.map((task, ti) => (
-                  <motion.div
-                    key={task.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: ti * 0.04 }}
-                  >
-                    <Card
-                      className={
-                        task.status === "COMPLETED"
-                          ? "border-emerald-500/40 bg-emerald-500/5"
-                          : task.status === "AVAILABLE"
-                            ? "border-[var(--accent)]/30"
-                            : "opacity-75"
-                      }
+                {phase.tasks.map((task, ti) => {
+                  const examDone = isLessonFinishedWithExam(task);
+                  const openish =
+                    task.status === "AVAILABLE" ||
+                    (task.status === "COMPLETED" && !examDone);
+                  return (
+                    <motion.div
+                      key={task.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: ti * 0.04 }}
                     >
-                      <CardHeader className="flex-row items-center justify-between gap-4 py-4">
-                        <div className="flex items-start gap-3">
-                          <div className="mt-0.5">
-                            {task.status === "COMPLETED" ? (
-                              <Check className="h-5 w-5 text-emerald-500" />
-                            ) : task.status === "AVAILABLE" ? (
-                              <Circle className="h-5 w-5 text-[var(--accent)]" />
-                            ) : (
-                              <Lock className="h-4 w-4 text-[var(--muted)]" />
+                      <Card
+                        className={
+                          examDone
+                            ? "border-emerald-500/40 bg-emerald-500/5"
+                            : openish
+                              ? "border-[var(--accent)]/30"
+                              : "opacity-75"
+                        }
+                      >
+                        <CardHeader className="flex-row items-center justify-between gap-4 py-4">
+                          <div className="flex items-start gap-3">
+                            <div className="mt-0.5">
+                              {examDone ? (
+                                <Check className="h-5 w-5 text-emerald-500" />
+                              ) : openish ? (
+                                <Circle className="h-5 w-5 text-[var(--accent)]" />
+                              ) : (
+                                <Lock className="h-4 w-4 text-[var(--muted)]" />
+                              )}
+                            </div>
+                            <div className="min-w-0 space-y-2">
+                              <CardTitle className="text-base font-medium leading-snug">
+                                {task.title}
+                              </CardTitle>
+                              <p className="flex items-center gap-1 text-xs text-[var(--muted)]">
+                                <Clock className="h-3 w-3 shrink-0 opacity-70" />
+                                {tTask("lessonTime", {
+                                  minutes: task.lessonTimeMinutes,
+                                })}
+                              </p>
+                              <TaskAchievementChips
+                                keys={task.achievementKeys}
+                                label={t("achievementTracks")}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <Badge
+                              variant={
+                                examDone
+                                  ? "success"
+                                  : openish
+                                    ? "default"
+                                    : "outline"
+                              }
+                            >
+                              {examDone
+                                ? t("done")
+                                : openish
+                                  ? t("available")
+                                  : t("locked")}
+                            </Badge>
+                            {task.status !== "LOCKED" && (
+                              <Link
+                                href={`/roadmap/${roadmapId}/task/${task.id}`}
+                                className="text-sm font-medium text-[var(--accent)] hover:underline"
+                              >
+                                {t("openTask")}
+                              </Link>
                             )}
                           </div>
-                          <div className="min-w-0 space-y-2">
-                            <CardTitle className="text-base font-medium leading-snug">
-                              {task.title}
-                            </CardTitle>
-                            <p className="flex items-center gap-1 text-xs text-[var(--muted)]">
-                              <Clock className="h-3 w-3 shrink-0 opacity-70" />
-                              {tTask("lessonTime", {
-                                minutes: task.lessonTimeMinutes,
-                              })}
-                            </p>
-                            <TaskAchievementChips
-                              keys={task.achievementKeys}
-                              label={t("achievementTracks")}
-                            />
-                          </div>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <Badge
-                            variant={
-                              task.status === "COMPLETED"
-                                ? "success"
-                                : task.status === "AVAILABLE"
-                                  ? "default"
-                                  : "outline"
-                            }
-                          >
-                            {task.status === "COMPLETED"
-                              ? t("done")
-                              : task.status === "AVAILABLE"
-                                ? t("available")
-                                : t("locked")}
-                          </Badge>
-                          {task.status !== "LOCKED" && (
-                            <Link
-                              href={`/roadmap/${roadmapId}/task/${task.id}`}
-                              className="text-sm font-medium text-[var(--accent)] hover:underline"
-                            >
-                              {t("openTask")}
-                            </Link>
-                          )}
-                        </div>
-                      </CardHeader>
-                    </Card>
-                  </motion.div>
-                ))}
+                        </CardHeader>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
               </div>
             </section>
           );

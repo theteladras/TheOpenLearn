@@ -14,6 +14,8 @@ export const REFLECTION_MIN_CHARS = 150;
 export const COIN_EXCELLENCE_BONUS = 10;
 /** Per message when asking the task-scoped AI coach (free plan only; PRO skips coin economy). */
 export const COIN_TASK_AI_MESSAGE = 1;
+/** One-time purchase for an AI-generated lesson handbook PDF (free plan; PRO included at no cost). */
+export const COIN_LESSON_HANDBOOK = 12;
 
 export function currentCalendarPeriod(d = new Date()): number {
   return d.getFullYear() * 100 + (d.getMonth() + 1);

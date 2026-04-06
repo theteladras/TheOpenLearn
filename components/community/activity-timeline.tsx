@@ -2,14 +2,14 @@ import { Award, ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui/badge";
 import type { CommunityActivityItem } from "@/lib/community-data";
-import { activityToCommentTarget } from "@/lib/feed-comments";
-import { FeedActivityComments } from "@/components/community/feed-activity-comments";
-import type { FeedCommentClientModel } from "@/components/community/feed-activity-comments";
+import { activityToCommentTarget } from "@/lib/activity-comments";
+import { ActivityTimelineComments } from "@/components/community/activity-timeline-comments";
+import type { ActivityCommentClientModel } from "@/components/community/activity-timeline-comments";
 import { cn } from "@/lib/utils";
 
-export type CommunityFeedCardModel = CommunityActivityItem & {
+export type ActivityTimelineItemModel = CommunityActivityItem & {
   rel: string;
-  comments: FeedCommentClientModel[];
+  comments: ActivityCommentClientModel[];
 };
 
 function initials(name: string | null, anon: string): string {
@@ -22,12 +22,12 @@ function initials(name: string | null, anon: string): string {
   return s.slice(0, 2).toUpperCase();
 }
 
-export function CommunityFeedCards({
+export function ActivityTimeline({
   items,
   selfUserId,
   i18n,
 }: {
-  items: CommunityFeedCardModel[];
+  items: ActivityTimelineItemModel[];
   selfUserId: string | null;
   i18n: {
     anon: string;
@@ -53,8 +53,8 @@ export function CommunityFeedCards({
   };
 }) {
   return (
-    <ul className="flex flex-col gap-4">
-      {items.map((item) => {
+    <ol className="relative flex flex-col">
+      {items.map((item, index) => {
         const name = item.displayName ?? i18n.anon;
         const ini = initials(item.displayName, i18n.anon);
         const self = selfUserId === item.userId;
@@ -63,22 +63,42 @@ export function CommunityFeedCards({
         const stableKey = task
           ? `task-${item.progressId}`
           : `badge-${item.userAchievementId}`;
+        const isLast = index === items.length - 1;
 
         return (
-          <li key={stableKey}>
+          <li key={stableKey} className="relative flex gap-0">
+            <div
+              className="flex w-9 shrink-0 flex-col items-center pt-1 sm:w-10"
+              aria-hidden
+            >
+              <span
+                className={cn(
+                  "z-[1] size-3 rounded-full shadow-md ring-4 ring-[var(--background)] sm:size-3.5",
+                  task
+                    ? "bg-gradient-to-br from-violet-500 to-fuchsia-600 shadow-violet-500/30"
+                    : "bg-gradient-to-br from-amber-400 to-orange-600 shadow-orange-500/25",
+                )}
+              />
+              {!isLast ? (
+                <span className="mt-1 w-px flex-1 min-h-8 bg-gradient-to-b from-violet-500/35 via-violet-500/12 to-transparent dark:from-violet-400/25" />
+              ) : null}
+            </div>
+
             <article
               className={cn(
+                "min-w-0 flex-1 pb-10 pl-3 sm:pl-4",
+                isLast && "pb-0",
                 "relative overflow-hidden rounded-[1.35rem] border border-[var(--border)]/80",
-                "bg-gradient-to-br from-violet-500/[0.07] via-[var(--card)]/92 to-cyan-500/[0.05]",
-                "p-5 shadow-lg shadow-violet-500/[0.07] backdrop-blur-md",
-                "transition duration-300 hover:border-violet-500/30 hover:shadow-violet-500/12",
+                "bg-gradient-to-br from-violet-500/[0.06] via-[var(--card)]/92 to-cyan-500/[0.04]",
+                "p-5 shadow-lg shadow-violet-500/[0.06] backdrop-blur-md",
+                "transition duration-300 hover:border-violet-500/28 hover:shadow-violet-500/10",
               )}
             >
-              <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-violet-500/10 blur-2xl" />
+              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-violet-500/10 blur-2xl" />
               <div className="relative flex gap-4">
                 <div
                   className={cn(
-                    "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-sm font-bold tracking-tight text-white shadow-lg",
+                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-bold tracking-tight text-white shadow-lg sm:h-12 sm:w-12",
                     task
                       ? "bg-gradient-to-br from-violet-500 to-fuchsia-600 shadow-violet-600/20"
                       : "bg-gradient-to-br from-amber-500 to-orange-600 shadow-orange-600/15",
@@ -190,7 +210,7 @@ export function CommunityFeedCards({
                     ) : null}
                   </div>
 
-                  <FeedActivityComments
+                  <ActivityTimelineComments
                     targetKind={target.targetKind}
                     targetId={target.targetId}
                     initialComments={item.comments}
@@ -217,6 +237,6 @@ export function CommunityFeedCards({
           </li>
         );
       })}
-    </ul>
+    </ol>
   );
 }

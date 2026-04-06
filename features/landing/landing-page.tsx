@@ -12,6 +12,7 @@ import {
 } from "framer-motion";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import {
+  BookMarked,
   BookOpen,
   Brain,
   CalendarDays,
@@ -25,6 +26,7 @@ import {
   Wand2,
   Zap,
 } from "lucide-react";
+import { useClerk } from "@clerk/nextjs";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -275,6 +277,7 @@ const landingDesktopNavLinkClass =
 
 export function LandingPage() {
   const t = useTranslations("Landing");
+  const clerk = useClerk();
   const heroRef = useRef<HTMLElement>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { scrollYProgress } = useScroll({
@@ -333,21 +336,31 @@ export function LandingPage() {
                   </a>
                 </DialogClose>
                 <DialogClose asChild>
-                  <Link href="/feed" className={mobileNavLinkClass}>
-                    {t("nav.community")}
+                  <Link href="/activities" className={mobileNavLinkClass}>
+                    {t("nav.activities")}
                   </Link>
                 </DialogClose>
                 <div className="mt-4 border-t border-[var(--border)] pt-2">
-                  <DialogClose asChild>
-                    <Link href="/sign-in" className={mobileNavLinkClass}>
-                      {t("nav.signIn")}
-                    </Link>
-                  </DialogClose>
-                  <DialogClose asChild>
-                    <Link href="/sign-up" className={mobileNavLinkClass}>
-                      {t("nav.getStarted")}
-                    </Link>
-                  </DialogClose>
+                  <button
+                    type="button"
+                    className={`${mobileNavLinkClass} w-full text-left`}
+                    onClick={() => {
+                      setMobileNavOpen(false);
+                      queueMicrotask(() => clerk.openSignIn());
+                    }}
+                  >
+                    {t("nav.signIn")}
+                  </button>
+                  <button
+                    type="button"
+                    className={`${mobileNavLinkClass} w-full text-left`}
+                    onClick={() => {
+                      setMobileNavOpen(false);
+                      queueMicrotask(() => clerk.openSignUp());
+                    }}
+                  >
+                    {t("nav.getStarted")}
+                  </button>
                   <DialogClose asChild>
                     <Link href="/privacy" className={mobileNavLinkClass}>
                       {t("footer.privacy")}
@@ -404,8 +417,8 @@ export function LandingPage() {
               {t("nav.rewards")}
             </motion.a>
             <motion.div whileHover={reduce ? undefined : { y: -1 }}>
-              <Link href="/feed" className={landingDesktopNavLinkClass}>
-                {t("nav.communityShort")}
+              <Link href="/activities" className={landingDesktopNavLinkClass}>
+                {t("nav.activitiesShort")}
               </Link>
             </motion.div>
           </div>
@@ -413,19 +426,21 @@ export function LandingPage() {
         <div className="flex shrink-0 items-center gap-1 sm:gap-1.5 md:gap-2">
           <LocaleSwitcher />
           <Button
+            type="button"
             variant="ghost"
             size="sm"
             className="hidden touch-manipulation rounded-full sm:inline-flex"
-            asChild
+            onClick={() => clerk.openSignIn()}
           >
-            <Link href="/sign-in">{t("nav.signIn")}</Link>
+            {t("nav.signIn")}
           </Button>
           <Button
+            type="button"
             size="sm"
             className="touch-manipulation rounded-full shadow-md shadow-[var(--accent)]/25 sm:shrink-0"
-            asChild
+            onClick={() => clerk.openSignUp()}
           >
-            <Link href="/sign-up">{t("nav.getStarted")}</Link>
+            {t("nav.getStarted")}
           </Button>
         </div>
       </SiteHeaderShell>
@@ -675,18 +690,35 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section id="features" className="relative py-16 md:py-24">
-          <div className="relative mx-auto max-w-6xl px-4 sm:px-4">
+        <section
+          id="features"
+          className="relative overflow-hidden py-20 md:py-28"
+        >
+          <div
+            className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#ebe7f5] via-[#f9f8fc] to-[#f3f0fa] dark:from-[#12101c] dark:via-[#0f0d14] dark:to-[#14101f]"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute -top-32 left-1/2 h-[min(32rem,80vw)] w-[min(48rem,100vw)] -translate-x-1/2 rounded-full bg-[var(--accent)]/[0.09] blur-3xl dark:bg-[var(--accent)]/[0.14]"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--border)] to-transparent opacity-80 dark:via-[var(--border)]/60"
+            aria-hidden
+          />
+
+          <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
             <motion.h2
-              className="text-center text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl"
-              initial={{ opacity: 0, scale: 0.96 }}
-              whileInView={{ opacity: 1, scale: 1 }}
+              className="mx-auto max-w-3xl text-balance text-center text-3xl font-bold tracking-tight sm:text-4xl md:text-[2.5rem] md:leading-[1.15]"
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ type: "spring", stiffness: 120, damping: 18 }}
             >
               {t("features.title")}
             </motion.h2>
-            <div className="mt-14 grid gap-6 md:grid-cols-3">
+
+            <div className="mt-14 grid gap-6 sm:grid-cols-2 xl:grid-cols-4 xl:gap-5">
               {[
                 {
                   icon: Wand2,
@@ -703,31 +735,41 @@ export function LandingPage() {
                   title: t("features.cards.progress.title"),
                   body: t("features.cards.progress.body"),
                 },
+                {
+                  icon: BookMarked,
+                  title: t("features.cards.handbooks.title"),
+                  body: t("features.cards.handbooks.body"),
+                },
               ].map((c, i) => (
                 <motion.div
                   key={c.title}
-                  initial={{ opacity: 0, y: 50 }}
+                  initial={{ opacity: 0, y: 36 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-40px" }}
-                  transition={{ ...springReveal, delay: i * 0.1 }}
+                  transition={{ ...springReveal, delay: i * 0.08 }}
+                  whileHover={
+                    reduce ? undefined : { y: -6, transition: springReveal }
+                  }
                 >
-                  <Card className="group relative h-full overflow-hidden border-[var(--border)] transition-shadow duration-500 hover:shadow-xl hover:shadow-[var(--accent)]/10">
-                    <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[var(--accent-soft)] opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
-                    <CardHeader className="relative">
-                      <motion.span
-                        whileHover={reduce ? undefined : { rotate: 360 }}
-                        transition={{ duration: 0.65, ease: "easeInOut" }}
-                      >
-                        <c.icon className="mb-2 h-8 w-8 text-[var(--accent)]" />
-                      </motion.span>
-                      <CardTitle className="text-base">{c.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="relative">
-                      <p className="text-sm leading-relaxed text-[var(--muted)]">
-                        {c.body}
-                      </p>
-                    </CardContent>
-                  </Card>
+                  <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--border)]/90 bg-[var(--card)] p-7 shadow-[0_8px_30px_-12px_rgba(20,18,31,0.1)] ring-1 ring-black/[0.02] transition-[box-shadow,border-color,transform] duration-300 dark:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.45)] dark:ring-white/[0.04] md:p-8 md:pb-7 xl:hover:border-[var(--accent)]/25 xl:hover:shadow-[0_22px_48px_-18px_rgba(109,77,243,0.2)]">
+                    <div
+                      className="absolute inset-x-0 top-0 h-0.5 scale-x-0 bg-gradient-to-r from-[var(--accent)] via-[#a855f7] to-[#c026d3] transition-transform duration-500 ease-out group-hover:scale-x-100"
+                      aria-hidden
+                    />
+                    <div className="mb-5 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2 border-[var(--accent)]/35 bg-[var(--accent-soft)]/80 dark:bg-[var(--accent-soft)]/40">
+                      <c.icon
+                        className="h-6 w-6 text-[var(--accent)]"
+                        strokeWidth={1.5}
+                        aria-hidden
+                      />
+                    </div>
+                    <h3 className="text-lg font-semibold tracking-tight text-[var(--foreground)]">
+                      {c.title}
+                    </h3>
+                    <p className="mt-3 flex-1 text-[15px] leading-relaxed text-[var(--muted)]">
+                      {c.body}
+                    </p>
+                  </div>
                 </motion.div>
               ))}
             </div>
@@ -756,60 +798,132 @@ export function LandingPage() {
                 {t("rewards.subtitle")}
               </p>
             </motion.div>
-            <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {[
-                {
-                  icon: Coins,
-                  title: t("rewards.cards.starter.title"),
-                  body: t("rewards.cards.starter.body"),
-                },
-                {
-                  icon: Zap,
-                  title: t("rewards.cards.spend.title"),
-                  body: t("rewards.cards.spend.body"),
-                },
-                {
-                  icon: Sparkles,
-                  title: t("rewards.cards.earn.title"),
-                  body: t("rewards.cards.earn.body"),
-                },
-                {
-                  icon: CalendarDays,
-                  title: t("rewards.cards.monthly.title"),
-                  body: t("rewards.cards.monthly.body"),
-                },
-                {
-                  icon: UserPlus,
-                  title: t("rewards.cards.referrals.title"),
-                  body: t("rewards.cards.referrals.body"),
-                },
-                {
-                  icon: Trophy,
-                  title: t("rewards.cards.moments.title"),
-                  body: t("rewards.cards.moments.body"),
-                },
-              ].map((item, i) => (
-                <motion.div
-                  key={item.title}
-                  initial={{ opacity: 0, y: 28 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-40px" }}
-                  transition={{ ...springReveal, delay: i * 0.06 }}
-                >
-                  <Card className="h-full border-[var(--border)] bg-[var(--card)]/90 shadow-lg shadow-black/[0.04] dark:shadow-black/25">
-                    <CardHeader>
-                      <item.icon className="mb-1 h-7 w-7 text-[var(--accent)]" />
-                      <CardTitle className="text-base">{item.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm leading-relaxed text-[var(--muted)]">
+
+            <motion.div
+              className="mx-auto mt-14 max-w-2xl"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-40px" }}
+              transition={{ ...springReveal, delay: 0.05 }}
+            >
+              <p className="text-center text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)] md:text-left">
+                {t("rewards.flowTitle")}
+              </p>
+              <div className="relative mt-8">
+                <div
+                  className="absolute bottom-6 left-[17px] top-6 w-px bg-gradient-to-b from-[var(--accent)]/35 via-[var(--border)] to-[var(--border)]"
+                  aria-hidden
+                />
+                <ol className="relative list-none space-y-0">
+                  {(
+                    [
+                      {
+                        icon: Coins,
+                        title: t("rewards.cards.starter.title"),
+                        body: t("rewards.cards.starter.body"),
+                      },
+                      {
+                        icon: Zap,
+                        title: t("rewards.cards.spend.title"),
+                        body: t("rewards.cards.spend.body"),
+                      },
+                      {
+                        icon: Sparkles,
+                        title: t("rewards.cards.earn.title"),
+                        body: t("rewards.cards.earn.body"),
+                      },
+                      {
+                        icon: BookMarked,
+                        title: t("rewards.cards.handbooks.title"),
+                        body: t("rewards.cards.handbooks.body"),
+                      },
+                    ] as const
+                  ).map((item, i) => (
+                    <motion.li
+                      key={item.title}
+                      className="relative flex gap-5 pb-12 last:pb-0"
+                      initial={{ opacity: 0, x: -12 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true, margin: "-24px" }}
+                      transition={{ ...springReveal, delay: i * 0.07 }}
+                    >
+                      <div className="relative z-[1] flex shrink-0 flex-col items-center">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-[var(--accent)]/85 bg-[var(--background)] text-sm font-semibold text-[var(--accent)] shadow-sm shadow-[var(--accent)]/10">
+                          {i + 1}
+                        </div>
+                      </div>
+                      <div className="min-w-0 flex-1 pt-0.5">
+                        <div className="flex items-start gap-3">
+                          <item.icon
+                            className="mt-0.5 h-5 w-5 shrink-0 text-[var(--accent)]"
+                            aria-hidden
+                          />
+                          <div>
+                            <h3 className="text-lg font-semibold leading-snug tracking-tight">
+                              {item.title}
+                            </h3>
+                            <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
+                              {item.body}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.li>
+                  ))}
+                </ol>
+              </div>
+            </motion.div>
+
+            <motion.div
+              className="mx-auto mt-6 max-w-2xl rounded-2xl border border-[var(--border)]/80 bg-[var(--muted)]/[0.06] px-5 py-6 md:px-8 md:py-8"
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-32px" }}
+              transition={{ ...springReveal, delay: 0.1 }}
+            >
+              <h3 className="text-sm font-semibold text-[var(--foreground)]">
+                {t("rewards.extrasTitle")}
+              </h3>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                {t("rewards.extrasHint")}
+              </p>
+              <ul className="mt-6 space-y-5">
+                {(
+                  [
+                    {
+                      icon: CalendarDays,
+                      title: t("rewards.cards.monthly.title"),
+                      body: t("rewards.cards.monthly.body"),
+                    },
+                    {
+                      icon: UserPlus,
+                      title: t("rewards.cards.referrals.title"),
+                      body: t("rewards.cards.referrals.body"),
+                    },
+                    {
+                      icon: Trophy,
+                      title: t("rewards.cards.moments.title"),
+                      body: t("rewards.cards.moments.body"),
+                    },
+                  ] as const
+                ).map((item) => (
+                  <li key={item.title} className="flex gap-3">
+                    <item.icon
+                      className="mt-0.5 h-4 w-4 shrink-0 text-[var(--muted)]"
+                      aria-hidden
+                    />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium leading-snug">
+                        {item.title}
+                      </p>
+                      <p className="mt-1 text-sm leading-relaxed text-[var(--muted)]">
                         {item.body}
                       </p>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
           </div>
         </section>
 
@@ -845,6 +959,7 @@ export function LandingPage() {
                     t("gamification.chip2"),
                     t("gamification.chip3"),
                     t("gamification.chip4"),
+                    t("gamification.chip5"),
                   ].map((label, i) => (
                     <motion.div
                       key={label}
@@ -855,13 +970,12 @@ export function LandingPage() {
                     >
                       <Badge
                         variant={
-                          i === 0
-                            ? "default"
-                            : i === 1
-                              ? "outline"
-                              : i === 2
-                                ? "muted"
-                                : "outline"
+                          i === 0 ?
+                            "default"
+                          : i === 1 ? "outline"
+                          : i === 2 ? "muted"
+                          : i === 3 ? "outline"
+                          : "muted"
                         }
                       >
                         {label}

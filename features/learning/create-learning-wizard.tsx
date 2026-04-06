@@ -41,10 +41,12 @@ import {
   analyzeLearningInput,
   confirmAndCreateRoadmap,
   refineLearningAlignment,
+  startDeeperChapterFromPriorRoadmap,
 } from "@/server/actions/learning-actions";
 import type {
   AlignmentClarification,
   ProposedJourney,
+  RoadmapDepth,
   SourceAnalysisResult,
   SourceScale,
 } from "@/types/ai";
@@ -167,6 +169,10 @@ export function CreateLearningWizard() {
     base: PendingBase;
     accumulatedIds: string[];
   } | null>(null);
+  const [dupDeeperOpen, setDupDeeperOpen] = useState(false);
+  const [deeperParentRoadmapId, setDeeperParentRoadmapId] = useState("");
+  const [deeperRoadmapDepth, setDeeperRoadmapDepth] =
+    useState<RoadmapDepth>("deep");
   const [journeys, setJourneys] = useState<JourneyDraft[]>([]);
   const [splitReason, setSplitReason] = useState<string | undefined>();
   const [pendingBase, setPendingBase] = useState<PendingBase | null>(null);
@@ -528,6 +534,88 @@ export function CreateLearningWizard() {
     })();
   }
 
+  function openDeeperChapterFlow() {
+    const eligible = duplicates.filter(
+      (d) => d.roadmapId && d.completedLessons > 0,
+    );
+    if (!eligible.length) {
+      toast.error(tDup("deeperNeedProgress"));
+      return;
+    }
+    const nextId =
+      eligible.find((e) => e.roadmapId === deeperParentRoadmapId)?.roadmapId ??
+      eligible[0]!.roadmapId!;
+    setDeeperParentRoadmapId(nextId);
+    setDeeperRoadmapDepth("deep");
+    setDupDeeperOpen(true);
+  }
+
+  async function onSubmitDeeperChapter() {
+    if (!dupResume || !deeperParentRoadmapId) return;
+    const blocked = dupResume.remaining[0];
+    if (!blocked) return;
+    const parentMeta = duplicates.find(
+      (d) => d.roadmapId === deeperParentRoadmapId,
+    );
+    if (!parentMeta?.roadmapId || parentMeta.completedLessons < 1) {
+      toast.error(tDup("deeperNeedProgress"));
+      return;
+    }
+
+    const nextFocus =
+      blocked.suggestedTitle.trim() || blocked.interpretedSubject.trim();
+    const buildsOn = tDup("buildsOnTemplate", {
+      done: parentMeta.completedLessons,
+      total: parentMeta.totalLessons,
+      title: parentMeta.title,
+    });
+    const rationaleParts = [
+      blocked.targetOutcome.trim(),
+      dupResume.base.userGoal?.trim(),
+    ].filter(Boolean);
+    const rationale =
+      rationaleParts.join(" — ") || tDup("deeperRationaleDefault");
+
+    setSubmitting(true);
+    try {
+      const res = await startDeeperChapterFromPriorRoadmap({
+        parentRoadmapId: deeperParentRoadmapId,
+        nextFocus,
+        buildsOn,
+        rationale,
+        roadmapDepth: deeperRoadmapDepth,
+        additionalSource: dupResume.base.packedSourceContent,
+      });
+      if (!res.ok) {
+        if (res.error === "INSUFFICIENT_COINS") {
+          toast.error(t("errors.insufficientCoins"));
+          return;
+        }
+        if (res.error === "NO_COMPLETED_LESSONS_ON_PRIOR") {
+          toast.error(tDup("deeperNeedProgress"));
+          return;
+        }
+        if (res.error === "CONTINUATION_ALREADY_FINISHED" && res.roadmapId) {
+          toast.info(tDup("deeperAlreadyFinished"));
+          setDupDeeperOpen(false);
+          setDupOpen(false);
+          setDupResume(null);
+          router.push(`/roadmap/${res.roadmapId}`);
+          return;
+        }
+        toast.error(res.error);
+        return;
+      }
+      toast.success(res.reused ? tDup("deeperReused") : tDup("deeperStarted"));
+      setDupDeeperOpen(false);
+      setDupOpen(false);
+      setDupResume(null);
+      router.push(`/roadmap/${res.roadmapId}`);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <>
       <Card className="max-w-2xl border-[var(--border)]">
@@ -764,7 +852,9 @@ export function CreateLearningWizard() {
               {scopeStepActive ? t("scopeTitle") : t("proposalsTitle")}
             </DialogTitle>
             <DialogDescription className="text-[13px] leading-snug">
-              {scopeStepActive ? t("scopeDescription") : t("proposalsDescription")}
+              {scopeStepActive
+                ? t("scopeDescription")
+                : t("proposalsDescription")}
             </DialogDescription>
             {sourceScale ? (
               <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--muted)]">
@@ -1013,9 +1103,7 @@ export function CreateLearningWizard() {
               type="button"
               size="sm"
               disabled={submitting || scopeStepActive}
-              title={
-                scopeStepActive ? t("scopeFinishFirstHint") : undefined
-              }
+              title={scopeStepActive ? t("scopeFinishFirstHint") : undefined}
               onClick={() => void onConfirmGenerate()}
             >
               {submitting ? (
@@ -1032,7 +1120,10 @@ export function CreateLearningWizard() {
         open={dupOpen}
         onOpenChange={(open) => {
           setDupOpen(open);
-          if (!open) setDupResume(null);
+          if (!open) {
+            setDupResume(null);
+            setDupDeeperOpen(false);
+          }
         }}
       >
         <DialogContent className="max-w-md gap-3 p-4 sm:p-5">
@@ -1044,21 +1135,34 @@ export function CreateLearningWizard() {
               {tDup("body")}
             </DialogDescription>
           </DialogHeader>
-          <ul className="list-inside list-disc space-y-0.5 text-[13px] text-[var(--muted)]">
+          <ul className="space-y-2 text-[13px]">
             {duplicates.map((d) => (
-              <li key={d.intentId}>
-                {d.title}
-                {d.roadmapId ? (
-                  <>
-                    {" · "}
-                    <Link
-                      className="text-[var(--accent)] underline"
-                      href={`/roadmap/${d.roadmapId}`}
-                    >
-                      {tDup("continue")}
-                    </Link>
-                  </>
-                ) : null}
+              <li
+                key={d.intentId}
+                className="rounded-md border border-[var(--border)]/80 px-2.5 py-2"
+              >
+                <div className="font-medium text-[var(--foreground)]">
+                  {d.title}
+                </div>
+                <div className="mt-1 text-[var(--muted)]">
+                  {d.roadmapId ? (
+                    <>
+                      {tDup("progressLine", {
+                        done: d.completedLessons,
+                        total: d.totalLessons,
+                      })}
+                      {" · "}
+                      <Link
+                        className="text-[var(--accent)] underline"
+                        href={`/roadmap/${d.roadmapId}`}
+                      >
+                        {tDup("continue")}
+                      </Link>
+                    </>
+                  ) : (
+                    tDup("noRoadmapYet")
+                  )}
+                </div>
               </li>
             ))}
           </ul>
@@ -1070,8 +1174,99 @@ export function CreateLearningWizard() {
             >
               {tUnd("cancel")}
             </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={
+                submitting ||
+                !duplicates.some((d) => d.roadmapId && d.completedLessons > 0)
+              }
+              title={
+                duplicates.some((d) => d.roadmapId && d.completedLessons > 0)
+                  ? undefined
+                  : tDup("deeperNeedProgress")
+              }
+              onClick={openDeeperChapterFlow}
+            >
+              {tDup("deeperShort")}
+            </Button>
             <Button size="sm" disabled={submitting} onClick={onDupCreateNew}>
               {tDup("createNew")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={dupDeeperOpen} onOpenChange={setDupDeeperOpen}>
+        <DialogContent className="max-w-md gap-3 p-4 sm:p-5">
+          <DialogHeader className="space-y-1 text-left">
+            <DialogTitle className="text-base font-semibold tracking-tight">
+              {tDup("deeperTitle")}
+            </DialogTitle>
+            <DialogDescription className="text-[13px] leading-snug">
+              {tDup("deeperBody")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label className="text-xs">{tDup("deeperPriorJourney")}</Label>
+              <Select
+                value={deeperParentRoadmapId}
+                onValueChange={setDeeperParentRoadmapId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={tDup("deeperPriorPlaceholder")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {duplicates
+                    .filter((d) => d.roadmapId && d.completedLessons > 0)
+                    .map((d) => (
+                      <SelectItem key={d.roadmapId!} value={d.roadmapId!}>
+                        {d.title} ({d.completedLessons}/{d.totalLessons})
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">{tDup("deeperDepth")}</Label>
+              <Select
+                value={deeperRoadmapDepth}
+                onValueChange={(v) => setDeeperRoadmapDepth(v as RoadmapDepth)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="shallow">
+                    {tUnd("depthShallow")}
+                  </SelectItem>
+                  <SelectItem value="standard">
+                    {tUnd("depthStandard")}
+                  </SelectItem>
+                  <SelectItem value="deep">{tUnd("depthDeep")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex flex-wrap justify-end gap-2 pt-1">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setDupDeeperOpen(false)}
+            >
+              {tUnd("cancel")}
+            </Button>
+            <Button
+              size="sm"
+              disabled={submitting || !deeperParentRoadmapId}
+              onClick={() => void onSubmitDeeperChapter()}
+            >
+              {submitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                tDup("deeperStart")
+              )}
             </Button>
           </div>
         </DialogContent>

@@ -1,6 +1,11 @@
 import type { TaskAchievementKey } from "@/lib/task-achievement-keys";
-import { resolveTaskEstimatedMinutes } from "@/lib/lesson-time-estimate";
+import { resolveTaskLessonMinutes } from "@/lib/lesson-time-estimate";
+import { pickLearningSideFacts } from "@/lib/task-side-facts";
 import { inferTopicCluster } from "@/lib/topic-cluster";
+import type {
+  LessonHandbookDoc,
+  LessonHandbookLLMInput,
+} from "@/server/ai/lesson-handbook-schema";
 import type {
   ContinuationSuggestionRow,
   GeneratedRoadmap,
@@ -56,19 +61,26 @@ function inferAchievementKeysFromTask(t: {
   return out;
 }
 
+function defaultTaskRecap(title: string): string {
+  return [
+    `- You focused on **${title}** using the path and links for this lesson.`,
+    `- Jot down one sentence in your notes about what you will use from this step next.`,
+  ].join("\n");
+}
+
 function defaultMentorPerspective(
   title: string,
   resources: GeneratedResource[],
 ): string {
   const named = resources.find((r) => r.title)?.title;
-  const anchor = named
-    ? `**Start here:** Open **${named}** and read any intro, overview, or “Getting started” section first—avoid dropping into random deep pages.`
-    : `**Start here:** Skim headings until you find the slice that clearly matches “${title}”, then read that section fully.`;
+  const start = named
+    ? `Open **${named}** and read any intro or “Getting started” section first—avoid jumping into random deep pages.`
+    : `Skim headings until you find the part that matches “${title}”, then read that section fully.`;
   return [
-    anchor,
-    `**Depth:** You do not need the whole reference in one sitting—one focused subsection that matches this task is enough.`,
-    `**Look for:** definitions, one worked example, and any “Common mistakes,” limits, or FAQ—these save time.`,
-    `**Pitfall:** Endless scrolling without a question. Pick one concrete question before you read (e.g. what you’d change on your next deploy) and stop when you can answer it in one sentence.`,
+    "## Where to start\n\n" + start,
+    "## How much to read\n\nYou do not need the whole reference in one sitting—one focused subsection for this task is enough.",
+    "## What to notice\n\nDefinitions, one worked example, and any “common mistakes” or FAQ—these save time.",
+    "## A common trap\n\nEndless scrolling without a question. Pick one concrete question before you read and stop when you can answer it in one sentence.",
   ].join("\n\n");
 }
 
@@ -79,25 +91,45 @@ export function finalizeMockRoadmap(
     ...draft,
     phases: draft.phases.map((ph) => ({
       ...ph,
-      tasks: ph.tasks.map((t) => ({
-        ...t,
-        lessonCategory:
-          t.lessonCategory ??
-          inferTopicCluster(`${ph.title} ${draft.title}`, t.title),
-        achievementKeys:
-          t.achievementKeys ??
-          inferAchievementKeysFromTask({
-            title: t.title,
+      tasks: ph.tasks.map((t) => {
+        const mentorPerspective = defaultMentorPerspective(
+          t.title,
+          t.resources,
+        );
+        return {
+          ...t,
+          lessonCategory:
+            t.lessonCategory ??
+            inferTopicCluster(`${ph.title} ${draft.title}`, t.title),
+          achievementKeys:
+            t.achievementKeys ??
+            inferAchievementKeysFromTask({
+              title: t.title,
+              instructions: t.instructions,
+              resources: t.resources,
+            }),
+          mentorPerspective,
+          keyTerms: t.keyTerms ?? [],
+          recap: t.recap?.trim() ? t.recap : defaultTaskRecap(t.title),
+          funFacts:
+            t.funFacts && t.funFacts.filter((s) => s?.trim()).length >= 2
+              ? t.funFacts
+                  .map((s) => (typeof s === "string" ? s.trim() : ""))
+                  .filter(Boolean)
+                  .slice(0, 3)
+              : pickLearningSideFacts(`${ph.title}::${t.title}`, 2),
+          estimatedMinutes: resolveTaskLessonMinutes({
+            explanation: t.explanation,
+            mentorPerspective,
             instructions: t.instructions,
-            resources: t.resources,
+            whyMatters: t.whyMatters,
+            quizCount: t.evaluation.quiz.length,
+            resourceCount: t.resources.length,
+            storedEstimatedMinutes: t.estimatedMinutes,
+            xpReward: t.xpReward,
           }),
-        estimatedMinutes: resolveTaskEstimatedMinutes(
-          t.estimatedMinutes,
-          t.xpReward,
-          t.evaluation.quiz.length,
-        ),
-        mentorPerspective: defaultMentorPerspective(t.title, t.resources),
-      })),
+        };
+      }),
     })),
   };
 }
@@ -1079,6 +1111,55 @@ export function mockContinuationSuggestions(input: {
 }
 
 /** Placeholder coach reply when AI_PROVIDER is mock. */
+export function mockLessonHandbook(
+  input: LessonHandbookLLMInput,
+): LessonHandbookDoc {
+  const journey = input.roadmapTitle.trim() || "Your journey";
+  return {
+    title: `${input.taskTitle.trim()} — learner handbook`,
+    subtitle: journey,
+    sections: [
+      {
+        heading: "What you covered",
+        body:
+          input.explanation?.trim() ||
+          `This lesson focused on **${input.taskTitle}** within “${journey}”. In live mode, this section summarizes the core ideas from your lesson notes.`,
+      },
+      {
+        heading: "Why it matters",
+        body:
+          input.whyMatters?.trim() ||
+          "Connect this step to the next time you need the skill—this mock handbook reminds you to tie each lesson to a real situation you'll face.",
+      },
+      {
+        heading: "How to apply it",
+        body:
+          input.instructions?.trim() ||
+          input.mentorPerspective?.trim() ||
+          "Follow the hands-on path from the lesson: work in small loops—read one chunk, try one thing, note one takeaway.",
+      },
+      {
+        heading: "Pitfalls to avoid",
+        body:
+          "Rushing without a concrete question; collecting tabs without practicing; assuming you remember without a one-line written recap. Slow is smooth when you are building durable skill.",
+      },
+      {
+        heading: "Spaced review (memory prompts)",
+        body:
+          "Without scrolling up: what was the main idea in one sentence? What would you teach a friend in two minutes? What is still fuzzy—and which resource name would you reopen first?",
+      },
+    ],
+    quickReference: [
+      `Journey: ${journey}`,
+      `Lesson: ${input.taskTitle.trim()}`,
+      input.recap?.trim() ?
+        `Recap cue: ${input.recap.trim().slice(0, 160)}${input.recap.trim().length > 160 ? "…" : ""}`
+      : "Add your own scratch terms here after you finish the lesson.",
+      "Mock PDF — set AI_PROVIDER to openai or anthropic for a real handbook from your content.",
+    ],
+  };
+}
+
 export function mockTaskCoachReply(input: {
   taskTitle: string;
   newQuestion: string;

@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, BookMarked } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +21,7 @@ import {
   countRoadmapTasks,
   progressPercent,
 } from "@/lib/journey-stats";
+import { isLessonFinishedWithExam } from "@/lib/lesson-finished";
 import { normalizeClusterKey } from "@/lib/topic-cluster";
 
 type Props = { params: Promise<{ locale: string }> };
@@ -32,6 +33,10 @@ export default async function DashboardPage({ params }: Props) {
   const tCluster = await getTranslations({
     locale,
     namespace: "TopicClusters",
+  });
+
+  const handbookCount = await prisma.lessonHandbook.count({
+    where: { userId: user.id },
   });
 
   const roadmaps = await prisma.roadmap.findMany({
@@ -60,8 +65,7 @@ export default async function DashboardPage({ params }: Props) {
   let phasesComplete = 0;
   let phasesTotal = 0;
 
-  const lessonCategoryAgg: Record<string, { total: number; done: number }> =
-    {};
+  const lessonCategoryAgg: Record<string, { total: number; done: number }> = {};
 
   for (const r of roadmaps) {
     const { total, completed } = countRoadmapTasks(r);
@@ -74,14 +78,12 @@ export default async function DashboardPage({ params }: Props) {
     const journeyCluster = r.learningIntent?.topicClusterKey ?? "general";
     for (const phase of r.phases) {
       for (const task of phase.tasks) {
-        const cat = normalizeClusterKey(
-          task.lessonCategory ?? journeyCluster,
-        );
+        const cat = normalizeClusterKey(task.lessonCategory ?? journeyCluster);
         if (!lessonCategoryAgg[cat]) {
           lessonCategoryAgg[cat] = { total: 0, done: 0 };
         }
         lessonCategoryAgg[cat].total += 1;
-        if (task.progress[0]?.status === "COMPLETED") {
+        if (isLessonFinishedWithExam(task.progress[0])) {
           lessonCategoryAgg[cat].done += 1;
         }
       }
@@ -136,6 +138,17 @@ export default async function DashboardPage({ params }: Props) {
             </Link>
           </Button>
         </DashboardHeroPulseCta>
+        {handbookCount > 0 ? (
+          <p className="text-center">
+            <Link
+              href="/profile/handbooks"
+              className="inline-flex items-center gap-2 rounded-full border border-indigo-500/25 bg-indigo-500/[0.07] px-4 py-2 text-sm font-medium text-indigo-800 transition-colors hover:bg-indigo-500/15 dark:text-indigo-200 dark:hover:bg-indigo-500/20"
+            >
+              <BookMarked className="size-4 shrink-0" aria-hidden />
+              {t("handbooksTeaser", { count: handbookCount })}
+            </Link>
+          </p>
+        ) : null}
       </header>
 
       <DashboardAnalytics

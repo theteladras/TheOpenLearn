@@ -32,7 +32,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: t("privateProfileMeta") };
   }
   return {
-    title: `${profile.displayName ?? t("anon")} · ${t("metaTitle")}`,
+    title: t("profilePublicMetaTitle", {
+      name: profile.displayName ?? t("anon"),
+    }),
     description: profile.publicBio ?? t("profileMetaFallback"),
   };
 }
@@ -74,10 +76,10 @@ export default async function PublicProfilePage({ params }: Props) {
     <div className="space-y-8">
       <p className="text-sm text-[var(--muted)]">
         <Link
-          href="/feed"
+          href="/activities"
           className="font-medium text-violet-600 hover:underline dark:text-violet-300"
         >
-          ← {t("backToCommunity")}
+          ← {t("backToActivities")}
         </Link>
       </p>
 

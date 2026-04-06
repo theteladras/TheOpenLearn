@@ -2,19 +2,19 @@ import { FeedActivityTarget } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import type { CommunityActivityItem } from "@/lib/community-data";
 
-export type FeedLessonRefStored = {
+export type ActivityLessonRefStored = {
   roadmapId: string;
   taskId: string;
   title: string;
 };
 
-export type FeedCommentPublic = {
+export type ActivityCommentPublic = {
   id: string;
   body: string;
   createdAt: Date;
   authorId: string;
   displayName: string | null;
-  lessonRefs: FeedLessonRefStored[] | null;
+  lessonRefs: ActivityLessonRefStored[] | null;
 };
 
 export function activityToCommentTarget(item: CommunityActivityItem): {
@@ -40,10 +40,10 @@ export function commentTargetStorageKey(
   return `${targetKind}:${targetId}`;
 }
 
-function parseLessonRefs(raw: unknown): FeedLessonRefStored[] | null {
+function parseLessonRefs(raw: unknown): ActivityLessonRefStored[] | null {
   if (raw == null) return null;
   if (!Array.isArray(raw)) return null;
-  const out: FeedLessonRefStored[] = [];
+  const out: ActivityLessonRefStored[] = [];
   for (const row of raw) {
     if (!row || typeof row !== "object") continue;
     const r = row as Record<string, unknown>;
@@ -58,12 +58,12 @@ function parseLessonRefs(raw: unknown): FeedLessonRefStored[] | null {
 }
 
 /**
- * Loads comments for feed cards (batched). Values are sorted oldest-first per target.
+ * Loads comments for timeline events (batched). Values are sorted oldest-first per target.
  */
-export async function getFeedCommentsForTargets(
+export async function getActivityCommentsForTargets(
   targets: { targetKind: FeedActivityTarget; targetId: string }[],
-): Promise<Map<string, FeedCommentPublic[]>> {
-  const map = new Map<string, FeedCommentPublic[]>();
+): Promise<Map<string, ActivityCommentPublic[]>> {
+  const map = new Map<string, ActivityCommentPublic[]>();
   if (targets.length === 0) return map;
 
   const rows = await prisma.feedComment.findMany({

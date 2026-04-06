@@ -20,6 +20,12 @@ export default async function CommunityRedirectPage({
       if (typeof v === "string") q.set(key, v);
     }
   }
-  const suffix = q.toString() ? `?${q.toString()}` : "";
-  redirect({ href: `/feed${suffix}`, locale });
+  if (q.get("view") === "rank") {
+    q.delete("view");
+    const s = q.toString();
+    redirect({ href: `/rankings${s ? `?${s}` : ""}`, locale });
+  }
+  q.delete("view");
+  const s = q.toString();
+  redirect({ href: `/activities${s ? `?${s}` : ""}`, locale });
 }
