@@ -1,0 +1,11 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/"
+healthcheckTimeout = 300
+
+# Runs once per deployment before traffic switches (requires `prisma` in the image).
+[deploy.release]
+command = "prisma migrate deploy"

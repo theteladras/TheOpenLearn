@@ -1,0 +1,23 @@
+# dependencies & build output
+node_modules
+.next
+out
+
+# git & IDE
+.git
+.gitignore
+.cursor
+*.md
+
+# local env & tooling
+.env
+.env.*
+!.env.example
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# tests & misc
+coverage
+*.tsbuildinfo
+.vercel
