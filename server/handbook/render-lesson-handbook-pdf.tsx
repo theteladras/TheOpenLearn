@@ -6,7 +6,14 @@ import {
   StyleSheet,
   renderToBuffer,
 } from "@react-pdf/renderer";
+import type { Bookmark } from "@react-pdf/types";
+import type { ComponentProps, ComponentType } from "react";
 import type { LessonHandbookDoc } from "@/server/ai/lesson-handbook-schema";
+
+/** `bookmark` is supported at runtime but missing from `@react-pdf/renderer` `Text` typings. */
+const TextWithBookmark = Text as ComponentType<
+  ComponentProps<typeof Text> & { bookmark?: Bookmark }
+>;
 
 /** Extra bottom padding so flowing text does not sit under the fixed footer. */
 const FOOTER_CLEARANCE_PT = 52;
@@ -162,9 +169,12 @@ function HandbookPdfInner({
         </View>
 
         <View wrap={false} style={styles.coverBlock}>
-          <Text bookmark={{ title: docTitle, fit: true }} style={styles.title}>
+          <TextWithBookmark
+            bookmark={{ title: docTitle, fit: true }}
+            style={styles.title}
+          >
             {stripMd(doc.title)}
-          </Text>
+          </TextWithBookmark>
           {doc.subtitle ? (
             <Text style={styles.subtitle}>{stripMd(doc.subtitle)}</Text>
           ) : null}

@@ -1,5 +1,6 @@
 import { getRequestConfig } from "next-intl/server";
-import { mergeMessages } from "@/lib/merge-messages";
+import type { AbstractIntlMessages } from "next-intl";
+import { mergeMessages, type MessageTree } from "@/lib/merge-messages";
 import { routing } from "./routing";
 
 export default getRequestConfig(async ({ requestLocale }) => {
@@ -8,12 +9,12 @@ export default getRequestConfig(async ({ requestLocale }) => {
     locale = routing.defaultLocale;
   }
 
-  const en = (await import("../messages/en.json")).default;
+  const en = (await import("../messages/en.json")).default as MessageTree;
   if (locale === routing.defaultLocale) {
-    return { locale, messages: en };
+    return { locale, messages: en as AbstractIntlMessages };
   }
 
-  const localized = (await import(`../messages/${locale}.json`)).default;
+  const localized = (await import(`../messages/${locale}.json`)).default as MessageTree;
   return {
     locale,
     messages: mergeMessages(en, localized),
