@@ -54,8 +54,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
 USER nextjs
 
+# Railway sets PORT at runtime; do not bake PORT=3000 or probes may hit the wrong port.
 EXPOSE 3000
-ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
