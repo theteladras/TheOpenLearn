@@ -3,9 +3,9 @@ import type { ReactNode } from "react";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
-/** Outer surface styles for sticky headers (use with a `relative` header). */
+/** Outer surface: iOS-style frosted glass — blurred backdrop, saturated, mostly opaque tint (content behind stays soft). */
 export const siteHeaderSurfaceClass =
-  "sticky top-0 z-40 border-b border-[var(--border)]/45 bg-[var(--background)]/65 pt-[env(safe-area-inset-top,0px)] shadow-[0_1px_0_rgba(255,255,255,0.55)_inset,0_18px_50px_-28px_rgba(109,77,243,0.28)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[var(--background)]/42 dark:border-[var(--border)]/55 dark:bg-[var(--background)]/55 dark:shadow-[0_1px_0_rgba(255,255,255,0.04)_inset,0_24px_64px_-32px_rgba(0,0,0,0.75)] dark:supports-[backdrop-filter]:bg-[var(--background)]/38";
+  "sticky top-0 z-40 border-b border-[var(--border)]/40 pt-[env(safe-area-inset-top,0px)] bg-[color-mix(in_srgb,var(--card)_78%,transparent)] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.72),0_10px_40px_-18px_rgba(109,77,243,0.22)] backdrop-blur-[28px] backdrop-saturate-[1.65] supports-[backdrop-filter]:bg-[color-mix(in_srgb,var(--card)_62%,transparent)] dark:border-[var(--border)]/35 dark:bg-[color-mix(in_srgb,var(--card)_68%,transparent)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_14px_48px_-20px_rgba(0,0,0,0.62)] dark:backdrop-blur-[28px] dark:backdrop-saturate-125 dark:supports-[backdrop-filter]:bg-[color-mix(in_srgb,var(--card)_52%,transparent)]";
 
 export function SiteHeaderShell({
   children,
@@ -49,7 +49,8 @@ export function SiteBrand({
     <Link
       href={href}
       className={cn(
-        "group flex min-w-0 shrink-0 items-center rounded-lg outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]",
+        "group relative flex min-w-0 shrink-0 items-center rounded-xl outline-none",
+        "focus-visible:ring-2 focus-visible:ring-[var(--accent)]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]",
         className,
       )}
     >
@@ -58,7 +59,8 @@ export function SiteBrand({
         alt="TheOpenLearn"
         width={325}
         height={253}
-        className="h-11 max-h-11 object-contain object-left transition-transform duration-300 ease-out group-hover:scale-[1.03]"
+        className="pointer-events-none h-11 max-h-11 object-contain object-left select-none filter transition-[filter] duration-300 ease-out group-hover:brightness-110 group-hover:saturate-125 group-focus-visible:brightness-110 group-focus-visible:saturate-125 dark:group-hover:brightness-115 dark:group-hover:saturate-150 dark:group-focus-visible:brightness-115 dark:group-focus-visible:saturate-150"
+        draggable={false}
         priority={false}
       />
     </Link>

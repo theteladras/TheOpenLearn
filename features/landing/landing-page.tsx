@@ -173,7 +173,7 @@ function HeroBackdrop({
           sizes="100vw"
         />
       </motion.div>
-      <div className="absolute inset-0 bg-gradient-to-b from-[var(--background)]/10 via-[var(--background)]/48 to-[var(--background)] dark:from-[var(--background)]/38 dark:via-[var(--background)]/72 dark:to-[var(--background)] md:from-[var(--background)]/20 md:via-[var(--background)]/65 md:dark:from-[var(--background)]/50 md:dark:via-[var(--background)]/85" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[var(--background)]/10 via-[var(--background)]/48 to-[var(--background)] dark:from-[var(--background)]/52 dark:via-[var(--background)]/88 dark:to-[var(--background)] md:from-[var(--background)]/20 md:via-[var(--background)]/65 md:dark:from-[var(--background)]/62 md:dark:via-[var(--background)]/92" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_55%_at_50%_-15%,var(--accent-soft)_0%,transparent_58%)] opacity-90 max-md:opacity-100 md:bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--accent-soft)_0%,transparent_55%)] md:opacity-80" />
       {!reduce && (
         <>
@@ -383,12 +383,9 @@ export function LandingPage() {
               </nav>
             </DialogContent>
           </Dialog>
-          <motion.div
-            whileHover={reduce ? undefined : { scale: 1.02 }}
-            whileTap={reduce ? undefined : { scale: 0.98 }}
-          >
+          <div>
             <SiteBrand href="/" />
-          </motion.div>
+          </div>
         </div>
         <nav
           className="hidden min-w-0 flex-1 justify-center px-1 md:flex"
@@ -474,7 +471,7 @@ export function LandingPage() {
                       transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] },
                     },
                   }}
-                  className="mb-4 text-[0.65rem] font-semibold uppercase text-[var(--muted)] md:mb-5 md:text-xs"
+                  className="mb-4 text-[0.65rem] font-semibold uppercase text-[var(--muted)] dark:text-[var(--foreground)]/65 md:mb-5 md:text-xs"
                 >
                   {t("hero.kicker")}
                 </motion.p>
@@ -518,7 +515,7 @@ export function LandingPage() {
                       transition: { ...springReveal, delay: 0.28 },
                     },
                   }}
-                  className="mx-auto mt-6 max-w-2xl text-pretty border-l-2 border-[var(--accent)]/35 pl-5 text-left text-base leading-snug text-[var(--muted)] md:mt-7 md:border-l-0 md:pl-0 md:text-center md:text-lg md:leading-relaxed"
+                  className="mx-auto mt-6 max-w-2xl text-pretty border-l-2 border-[var(--accent)]/35 pl-5 text-left text-base leading-snug text-[var(--muted)] dark:text-[var(--foreground)]/75 md:mt-7 md:border-l-0 md:pl-0 md:text-center md:text-lg md:leading-relaxed"
                 >
                   {t("hero.subtitle")}
                 </motion.p>
@@ -569,7 +566,7 @@ export function LandingPage() {
                       transition: { delay: 0.55, duration: 0.6 },
                     },
                   }}
-                  className="mx-auto mt-5 max-w-xl text-pretty text-sm leading-snug text-[var(--muted)] md:mt-6 md:leading-relaxed"
+                  className="mx-auto mt-5 max-w-xl text-pretty text-sm leading-snug text-[var(--muted)] dark:text-[var(--foreground)]/70 md:mt-6 md:leading-relaxed"
                 >
                   {t("hero.coinTeaser")}
                 </motion.p>

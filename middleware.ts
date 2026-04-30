@@ -13,6 +13,6 @@ export const config = {
   matcher: [
     "/",
     "/(en|de|fr|es|ru|sr|tr)/:path*",
-    "/((?!_next|_vercel|.*\\..*).*)",
+    "/((?!_next|_vercel|api/health|.*\\..*).*)",
   ],
 };
