@@ -3,7 +3,7 @@ import { getOrCreateAppUser } from "@/lib/auth-user";
 import { COIN_LESSON_HANDBOOK, skipsCoinEconomy } from "@/lib/coin-economy";
 import { prisma } from "@/lib/db";
 import { resolveTaskLessonMinutes } from "@/lib/lesson-time-estimate";
-import { parseTaskQuizQuestions } from "@/lib/task-quiz";
+import { parseTaskQuizBank, quizBankMaxQuestionCount } from "@/lib/task-quiz";
 import { TaskDetail } from "@/features/roadmap/task-detail";
 
 type Props = {
@@ -36,9 +36,9 @@ export default async function TaskPage({ params }: Props) {
 
   const progress = task.progress[0];
   const status = progress?.status ?? "LOCKED";
-  const quizLen = parseTaskQuizQuestions(
-    task.evaluation?.quizQuestions ?? null,
-  ).length;
+  const quizLen = quizBankMaxQuestionCount(
+    parseTaskQuizBank(task.evaluation?.quizQuestions ?? null),
+  );
   const lessonTimeMinutes = resolveTaskLessonMinutes({
     explanation: task.explanation,
     mentorPerspective: task.mentorPerspective,

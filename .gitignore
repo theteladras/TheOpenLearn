@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env
+# Local only: remote DB URL for prisma/seed.ts (see scripts/seed-remote-db.sh)
+.env.remote.local
 
 # vercel
 .vercel

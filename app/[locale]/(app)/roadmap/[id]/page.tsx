@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getOrCreateAppUser } from "@/lib/auth-user";
 import { prisma } from "@/lib/db";
 import { resolveTaskLessonMinutes } from "@/lib/lesson-time-estimate";
-import { parseTaskQuizQuestions } from "@/lib/task-quiz";
+import { parseTaskQuizBank, quizBankMaxQuestionCount } from "@/lib/task-quiz";
 import { RoadmapView } from "@/features/roadmap/roadmap-view";
 
 type Props = { params: Promise<{ locale: string; id: string }> };
@@ -53,9 +53,9 @@ export default async function RoadmapPage({ params }: Props) {
     summary: ph.summary,
     order: ph.order,
     tasks: ph.tasks.map((task) => {
-      const quizLen = parseTaskQuizQuestions(
-        task.evaluation?.quizQuestions ?? null,
-      ).length;
+      const quizLen = quizBankMaxQuestionCount(
+        parseTaskQuizBank(task.evaluation?.quizQuestions ?? null),
+      );
       const lessonTimeMinutes = resolveTaskLessonMinutes({
         explanation: task.explanation,
         mentorPerspective: task.mentorPerspective,

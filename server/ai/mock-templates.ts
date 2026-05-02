@@ -13,9 +13,20 @@ import type {
   GeneratedResource,
   ProposedJourney,
   SourceAnalysisResult,
+  TaskQuizQuestion,
   UnderstandingInput,
   UnderstandingResult,
 } from "@/types/ai";
+
+function twinQuizVariants(quiz: TaskQuizQuestion[]): TaskQuizQuestion[][] {
+  return [
+    quiz,
+    quiz.map((q) => ({
+      ...q,
+      question: `${q.question} (alternate form)`,
+    })),
+  ];
+}
 
 function inferAchievementKeysFromTask(t: {
   title: string;
@@ -77,10 +88,11 @@ function defaultMentorPerspective(
     ? `Open **${named}** and read any intro or “Getting started” section first—avoid jumping into random deep pages.`
     : `Skim headings until you find the part that matches “${title}”, then read that section fully.`;
   return [
-    "## Where to start\n\n" + start,
-    "## How much to read\n\nYou do not need the whole reference in one sitting—one focused subsection for this task is enough.",
-    "## What to notice\n\nDefinitions, one worked example, and any “common mistakes” or FAQ—these save time.",
+    "## Why one anchor page first\n\n" + start,
+    "## How much depth is enough\n\nYou do not need the whole reference in one sitting—one focused subsection for this task is enough.",
+    "## What to extract (and why it sticks)\n\nDefinitions, one worked example, and any “common mistakes” or FAQ—these are what you’ll actually remember.",
     "## A common trap\n\nEndless scrolling without a question. Pick one concrete question before you read and stop when you can answer it in one sentence.",
+    "## Remember this\n\n**One sentence:** you’re done when you can name one idea from the source you could explain to a friend without reopening the tab.",
   ].join("\n\n");
 }
 
@@ -123,7 +135,10 @@ export function finalizeMockRoadmap(
             mentorPerspective,
             instructions: t.instructions,
             whyMatters: t.whyMatters,
-            quizCount: t.evaluation.quiz.length,
+            quizCount: Math.max(
+              ...t.evaluation.quizVariants.map((v) => v.length),
+              0,
+            ),
             resourceCount: t.resources.length,
             storedEstimatedMinutes: t.estimatedMinutes,
             xpReward: t.xpReward,
@@ -204,7 +219,7 @@ function reactRoadmap(): GeneratedRoadmapDraft {
             ],
             evaluation: {
               summary: "Quick check: declarative UI vs manual DOM updates.",
-              quiz: [
+              quizVariants: twinQuizVariants([
                 {
                   question:
                     "In React’s declarative model, you mostly describe ___ and the library reconciles output.",
@@ -216,7 +231,7 @@ function reactRoadmap(): GeneratedRoadmapDraft {
                   ],
                   correctIndex: 0,
                 },
-              ],
+              ]),
               checkpointDescription:
                 "Record a 60s voice note or short paragraph summarizing declarative UI.",
             },
@@ -257,7 +272,7 @@ You’ll create a small file that defines your own component and render it from 
             ],
             evaluation: {
               summary: "Check that you can describe components, JSX, and how files connect.",
-              quiz: [
+              quizVariants: twinQuizVariants([
                 {
                   question:
                     "JSX is best described as syntax sugar for which underlying call?",
@@ -280,7 +295,7 @@ You’ll create a small file that defines your own component and render it from 
                   ],
                   correctIndex: 0,
                 },
-              ],
+              ]),
               checkpointDescription:
                 "If your component doesn’t render, check for syntax errors in JSX (every tag closed, one root element) and that the import path in `App.js` matches your filename.",
             },
@@ -308,7 +323,7 @@ You’ll create a small file that defines your own component and render it from 
             ],
             evaluation: {
               summary: "Separate source state from derived values.",
-              quiz: [
+              quizVariants: twinQuizVariants([
                 {
                   question:
                     "useState is typically used for:",
@@ -342,7 +357,7 @@ You’ll create a small file that defines your own component and render it from 
                   ],
                   correctIndex: 0,
                 },
-              ],
+              ]),
               checkpointDescription: "Add diagram or bullet list in notes.",
             },
           },
@@ -363,7 +378,7 @@ You’ll create a small file that defines your own component and render it from 
             ],
             evaluation: {
               summary: "Show you know when effects are warranted.",
-              quiz: [
+              quizVariants: twinQuizVariants([
                 {
                   question:
                     "useEffect is primarily for:",
@@ -386,7 +401,7 @@ You’ll create a small file that defines your own component and render it from 
                   ],
                   correctIndex: 0,
                 },
-              ],
+              ]),
               checkpointDescription: "Short write-up in task notes.",
             },
           },
@@ -413,7 +428,7 @@ You’ll create a small file that defines your own component and render it from 
             ],
             evaluation: {
               summary: "Coherent component boundaries.",
-              quiz: [
+              quizVariants: twinQuizVariants([
                 {
                   question:
                     "When planning a mini UI flow, you should usually:",
@@ -436,7 +451,7 @@ You’ll create a small file that defines your own component and render it from 
                   ],
                   correctIndex: 0,
                 },
-              ],
+              ]),
               checkpointDescription: "Upload sketch or notes in the task panel.",
             },
           },
@@ -492,7 +507,7 @@ function musicRoadmap(): GeneratedRoadmapDraft {
             ],
             evaluation: {
               summary: "Accurate step pattern within an octave.",
-              quiz: [
+              quizVariants: twinQuizVariants([
                 {
                   question: "In C major, the pattern of steps between scale degrees 1–8 is:",
                   choices: [
@@ -513,7 +528,7 @@ function musicRoadmap(): GeneratedRoadmapDraft {
                   ],
                   correctIndex: 0,
                 },
-              ],
+              ]),
               checkpointDescription: "Complete table in notes or photo of handwritten sketch.",
             },
           },
@@ -533,7 +548,7 @@ function musicRoadmap(): GeneratedRoadmapDraft {
             ],
             evaluation: {
               summary: "Clean major scales with correct accidentals.",
-              quiz: [
+              quizVariants: twinQuizVariants([
                 {
                   question: "G major typically raises which pitch with a sharp?",
                   choices: ["F♯", "C♯", "B♭", "E♭"],
@@ -544,7 +559,7 @@ function musicRoadmap(): GeneratedRoadmapDraft {
                   choices: ["B♭", "F♭", "E♭", "A♭"],
                   correctIndex: 0,
                 },
-              ],
+              ]),
               checkpointDescription: "Audio hum or keyboard recording optional in notes link.",
             },
           },
@@ -571,7 +586,7 @@ function musicRoadmap(): GeneratedRoadmapDraft {
             ],
             evaluation: {
               summary: "Consistent interval arithmetic.",
-              quiz: [
+              quizVariants: twinQuizVariants([
                 {
                   question:
                     "From C up to E is most accurately called a:",
@@ -594,7 +609,7 @@ function musicRoadmap(): GeneratedRoadmapDraft {
                   ],
                   correctIndex: 0,
                 },
-              ],
+              ]),
               checkpointDescription: "Write answers in task notes.",
             },
           },
@@ -614,7 +629,7 @@ function musicRoadmap(): GeneratedRoadmapDraft {
             ],
             evaluation: {
               summary: "Roman numerals match chord spellings.",
-              quiz: [
+              quizVariants: twinQuizVariants([
                 {
                   question: "In C major, the I chord as a triad is spelled:",
                   choices: ["C–E–G (major triad)", "C–E♭–G", "C–F–A", "B–D♯–F♯"],
@@ -630,7 +645,7 @@ function musicRoadmap(): GeneratedRoadmapDraft {
                   ],
                   correctIndex: 0,
                 },
-              ],
+              ]),
               checkpointDescription: "Photo or notation export in notes.",
             },
           },
@@ -657,7 +672,7 @@ function musicRoadmap(): GeneratedRoadmapDraft {
             ],
             evaluation: {
               summary: "Coherent mini analysis tied to vocabulary from earlier tasks.",
-              quiz: [
+              quizVariants: twinQuizVariants([
                 {
                   question:
                     "Labeling a melodic peak with a scale degree helps you:",
@@ -679,7 +694,7 @@ function musicRoadmap(): GeneratedRoadmapDraft {
                   ],
                   correctIndex: 0,
                 },
-              ],
+              ]),
               checkpointDescription: "Attach commentary in notes (what surprised you?).",
             },
           },
@@ -736,7 +751,7 @@ Link **prerequisites** with arrows so relationships stay obvious when you review
             ],
             evaluation: {
               summary: "**Coverage** and sensible grouping—not perfect polish.",
-              quiz: [
+              quizVariants: twinQuizVariants([
                 {
                   question:
                     "A concept map primarily helps by:",
@@ -759,7 +774,7 @@ Link **prerequisites** with arrows so relationships stay obvious when you review
                   ],
                   correctIndex: 0,
                 },
-              ],
+              ]),
               checkpointDescription: "Add a **snapshot or link** in task notes when done.",
             },
           },
@@ -781,7 +796,7 @@ Link **prerequisites** with arrows so relationships stay obvious when you review
             ],
             evaluation: {
               summary: "Honest error log with corrections.",
-              quiz: [
+              quizVariants: twinQuizVariants([
                 {
                   question:
                     "After a worked example, comparing your attempt without peeking mainly:",
@@ -803,7 +818,7 @@ Link **prerequisites** with arrows so relationships stay obvious when you review
                   ],
                   correctIndex: 0,
                 },
-              ],
+              ]),
               checkpointDescription: "Paste table in task notes.",
             },
           },
@@ -824,7 +839,7 @@ Link **prerequisites** with arrows so relationships stay obvious when you review
             resources: [],
             evaluation: {
               summary: "Clear narrative arc.",
-              quiz: [
+              quizVariants: twinQuizVariants([
                 {
                   question:
                     "A 3-minute teach-back should center on:",
@@ -846,7 +861,7 @@ Link **prerequisites** with arrows so relationships stay obvious when you review
                   ],
                   correctIndex: 0,
                 },
-              ],
+              ]),
               checkpointDescription: "Link or transcript in notes.",
             },
           },

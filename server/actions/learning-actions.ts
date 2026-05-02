@@ -13,7 +13,13 @@ import {
 import { continuationSuggestionsSchema } from "@/server/ai/llm";
 import { getOrCreateAppUser, requireAuthUserId } from "@/lib/auth-user";
 import { prisma } from "@/lib/db";
-import { gradeQuiz, parseTaskQuizQuestions } from "@/lib/task-quiz";
+import {
+  activeQuizVariant,
+  gradeQuiz,
+  parseTaskQuizBank,
+  quizBankToJsonValue,
+  taskBankHasQuiz,
+} from "@/lib/task-quiz";
 import { normalizeTopic, topicsLikelyDuplicate } from "@/lib/normalize-topic";
 import {
   buildLinkSourceAppendix,
@@ -65,7 +71,12 @@ import {
   skipsCoinEconomy,
 } from "@/lib/coin-economy";
 import { routing } from "@/i18n/routing";
-import { learnerLevelFromXp } from "@/lib/xp-level";
+import {
+  clampTaskXpReward,
+  learnerLevelFromXp,
+  maxXpDeltaForLevelGain,
+  MAX_LEVEL_GAIN_PER_TASK_COMPLETE,
+} from "@/lib/xp-level";
 
 const analyzeSchema = z
   .object({
@@ -467,7 +478,9 @@ export async function confirmAndCreateRoadmap(
               taskId: task.id,
               summary: t.evaluation.summary,
               checklist: [],
-              quizQuestions: t.evaluation.quiz as unknown as Prisma.InputJsonValue,
+              quizQuestions: quizBankToJsonValue(
+                t.evaluation.quizVariants,
+              ) as unknown as Prisma.InputJsonValue,
               checkpointDescription: t.evaluation.checkpointDescription,
             },
           });
@@ -933,7 +946,9 @@ export async function startContinuationFromRoadmap(
               taskId: task.id,
               summary: t.evaluation.summary,
               checklist: [],
-              quizQuestions: t.evaluation.quiz as unknown as Prisma.InputJsonValue,
+              quizQuestions: quizBankToJsonValue(
+                t.evaluation.quizVariants,
+              ) as unknown as Prisma.InputJsonValue,
               checkpointDescription: t.evaluation.checkpointDescription,
             },
           });
@@ -1236,7 +1251,9 @@ export async function startDeeperChapterFromPriorRoadmap(
               taskId: task.id,
               summary: t.evaluation.summary,
               checklist: [],
-              quizQuestions: t.evaluation.quiz as unknown as Prisma.InputJsonValue,
+              quizQuestions: quizBankToJsonValue(
+                t.evaluation.quizVariants,
+              ) as unknown as Prisma.InputJsonValue,
               checkpointDescription: t.evaluation.checkpointDescription,
             },
           });
@@ -1324,10 +1341,9 @@ export async function submitTaskQuiz(
     if (!progress || progress.status !== "AVAILABLE") {
       return { ok: false, error: "Task not available." };
     }
-    const questions = parseTaskQuizQuestions(
-      progress.task.evaluation?.quizQuestions,
-    );
-    if (questions.length === 0) {
+    const bank = parseTaskQuizBank(progress.task.evaluation?.quizQuestions);
+    const questions = activeQuizVariant(bank, progress.quizFailCount);
+    if (!taskBankHasQuiz(bank) || questions.length === 0) {
       return { ok: false, error: "No quiz for this task." };
     }
     if (progress.quizPassedAt) {
@@ -1428,10 +1444,10 @@ export async function markTaskComplete(taskId: string): Promise<
       return { ok: false, error: "Task not available." };
     }
 
-    const quiz = parseTaskQuizQuestions(
+    const quizBank = parseTaskQuizBank(
       progress.task.evaluation?.quizQuestions,
     );
-    if (quiz.length === 0) {
+    if (!taskBankHasQuiz(quizBank)) {
       return { ok: false, error: "EXAM_REQUIRED" };
     }
     if (!progress.quizPassedAt) {
@@ -1447,11 +1463,6 @@ export async function markTaskComplete(taskId: string): Promise<
         status: "COMPLETED",
         completedAt: new Date(),
       },
-    });
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { xpTotal: { increment: xpReward } },
     });
 
     await prisma.roadmap.update({
@@ -1494,6 +1505,7 @@ export async function markTaskComplete(taskId: string): Promise<
     const roadmapDone = allProgress.every((p) => isLessonFinishedWithExam(p));
 
     const newAchievements: string[] = [];
+    let achievementXpSum = 0;
     async function grant(slug: string) {
       const ach = await prisma.achievement.findUnique({ where: { slug } });
       if (!ach) return;
@@ -1502,10 +1514,10 @@ export async function markTaskComplete(taskId: string): Promise<
           data: { userId: user.id, achievementId: ach.id },
         });
         newAchievements.push(slug);
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { xpTotal: { increment: ach.xpBonus } },
-        });
+        achievementXpSum += Math.max(
+          0,
+          Math.floor(Number.isFinite(ach.xpBonus) ? ach.xpBonus : 0),
+        );
       } catch {
         /* already earned */
       }
@@ -1552,6 +1564,21 @@ export async function markTaskComplete(taskId: string): Promise<
       where: { userId: user.id },
     });
     if (badgeTotal >= 5) await grant("achievement_fan");
+
+    const taskXp = clampTaskXpReward(xpReward);
+    const rawXpTotal = taskXp + achievementXpSum;
+    // One completion must not jump many levels (badges + task can be huge). Excess is dropped.
+    const maxXpThisAction = maxXpDeltaForLevelGain(
+      xpBefore,
+      MAX_LEVEL_GAIN_PER_TASK_COMPLETE,
+    );
+    const xpGained = Math.min(rawXpTotal, maxXpThisAction);
+    if (xpGained > 0) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { xpTotal: { increment: xpGained } },
+      });
+    }
 
     let coinsEarned = 0;
     const wallet = await prisma.user.findUnique({
@@ -1631,7 +1658,7 @@ export async function markTaskComplete(taskId: string): Promise<
 
     return {
       ok: true,
-      xpGained: xpReward,
+      xpGained,
       phaseCompleted: phaseDone,
       roadmapCompleted: roadmapDone,
       newAchievements,
@@ -1658,6 +1685,13 @@ function revalidatePublicLearningPaths(userId: string, profilePublic: boolean) {
     revalidatePath(`${prefix}/community`);
     revalidatePath(`${prefix}/community/u/${userId}`);
   }
+}
+
+function clipActivityText(s: string, max: number): string {
+  const t = s.trim();
+  if (!t) return "";
+  if (t.length <= max) return t;
+  return `${t.slice(0, Math.max(0, max - 1)).trimEnd()}…`;
 }
 
 const askTaskCoachSchema = z.object({
@@ -1795,10 +1829,27 @@ export async function askTaskCoach(
       debited = true;
     }
     const reply = await answerTaskCoach(coachInput);
+    try {
+      await prisma.taskCoachActivity.create({
+        data: {
+          userId: user.id,
+          taskId: task.id,
+          roadmapId: task.phase.roadmapId,
+          userMessageExcerpt: clipActivityText(message, 500),
+          assistantExcerpt: clipActivityText(reply, 2000),
+        },
+      });
+    } catch (logErr) {
+      console.error("taskCoachActivity log", logErr);
+    }
     revalidatePath("/dashboard");
     const roadmapId = task.phase.roadmapId;
     revalidatePath(`/roadmap/${roadmapId}`);
     revalidatePath(`/roadmap/${roadmapId}/task/${taskId}`);
+    for (const loc of routing.locales) {
+      const prefix = loc === routing.defaultLocale ? "" : `/${loc}`;
+      revalidatePath(`${prefix}/activities`);
+    }
     return { ok: true, reply };
   } catch (e) {
     console.error("askTaskCoach", e);

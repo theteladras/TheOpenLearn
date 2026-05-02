@@ -20,6 +20,7 @@
     "db:pull": "prisma db pull",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
+    "db:migrate:remote": "bash scripts/migrate-remote-db.sh",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "postinstall": "prisma generate"

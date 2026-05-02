@@ -226,6 +226,7 @@ export default async function ActivitiesPage({ params, searchParams }: Props) {
                     ["all", t("typeAll")] as const,
                     ["task", t("typeLessons")] as const,
                     ["badge", t("typeBadges")] as const,
+                    ["coach", t("typeGuide")] as const,
                   ] as const
                 ).map(([kind, label]) => (
                   <Link
@@ -260,12 +261,16 @@ export default async function ActivitiesPage({ params, searchParams }: Props) {
                   <p className="text-sm font-semibold text-[var(--foreground)]">
                     {evt.id === "task"
                       ? t("eventLessonTitle")
-                      : t("eventBadgeTitle")}
+                      : evt.id === "badge"
+                        ? t("eventBadgeTitle")
+                        : t("eventCoachTitle")}
                   </p>
                   <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
                     {evt.id === "task"
                       ? t("eventLessonBody")
-                      : t("eventBadgeBody")}
+                      : evt.id === "badge"
+                        ? t("eventBadgeBody")
+                        : t("eventCoachBody")}
                   </p>
                 </div>
               ))}
@@ -309,6 +314,10 @@ export default async function ActivitiesPage({ params, searchParams }: Props) {
                 you: tCom("you"),
                 verbLesson: t("activityVerbLesson"),
                 verbBadge: t("activityVerbBadge"),
+                verbCoach: t("activityVerbCoach"),
+                coachYourQuestion: t("coachYourQuestion"),
+                coachGuideReply: t("coachGuideReply"),
+                coachPublicBlurb: t("coachPublicBlurb"),
                 profile: tCom("profile"),
                 openOwnLesson: t("openOwnLesson"),
                 journeyLabel: t("journeyLabel"),

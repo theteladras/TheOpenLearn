@@ -78,10 +78,12 @@ function SidebarNavLink({
 export function AppSidebar({
   plan,
   coins,
+  xpTotal,
   labels,
 }: {
   plan: string;
   coins: number;
+  xpTotal: number;
   labels: {
     dashboard: string;
     newLearning: string;
@@ -154,6 +156,7 @@ export function AppSidebar({
         <AppUserButton
           plan={plan}
           coins={coins}
+          xpTotal={xpTotal}
           labels={{
             openWallet: labels.openWallet,
             walletBalance: labels.walletBalance,
@@ -247,6 +250,7 @@ export function AppSidebar({
           <AppUserButton
             plan={plan}
             coins={coins}
+            xpTotal={xpTotal}
             labels={{
               openWallet: labels.openWallet,
               walletBalance: labels.walletBalance,

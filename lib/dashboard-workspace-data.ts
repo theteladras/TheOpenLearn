@@ -21,67 +21,6 @@ export type DashboardRoadmapForWorkspace = {
   phases: DashboardRoadmapPhase[];
 };
 
-export type PhaseStepState = "done" | "active" | "locked";
-
-export type PhaseStep = {
-  id: string;
-  title: string;
-  state: PhaseStepState;
-  /** e.g. "3/5" tasks done in active phase */
-  ratioLabel?: string;
-};
-
-function countPhaseTasks(phase: DashboardRoadmapPhase): {
-  total: number;
-  completed: number;
-} {
-  let total = 0;
-  let completed = 0;
-  for (const task of phase.tasks) {
-    total++;
-    if (isLessonFinishedWithExam(task.progress[0])) completed++;
-  }
-  return { total, completed };
-}
-
-export function buildPhaseSteps(
-  roadmap: DashboardRoadmapForWorkspace | null,
-): PhaseStep[] {
-  if (!roadmap?.phases?.length) return [];
-  const phases = [...roadmap.phases].sort((a, b) => a.order - b.order);
-  let firstIncompleteIdx = -1;
-  for (let i = 0; i < phases.length; i++) {
-    const { total, completed } = countPhaseTasks(phases[i]);
-    if (total === 0) continue;
-    if (completed < total) {
-      firstIncompleteIdx = i;
-      break;
-    }
-  }
-  if (firstIncompleteIdx === -1) {
-    return phases.map((p) => ({
-      id: p.id,
-      title: p.title,
-      state: "done" as const,
-    }));
-  }
-  return phases.map((p, i) => {
-    const { total, completed } = countPhaseTasks(p);
-    if (i < firstIncompleteIdx) {
-      return { id: p.id, title: p.title, state: "done" as const };
-    }
-    if (i > firstIncompleteIdx) {
-      return { id: p.id, title: p.title, state: "locked" as const };
-    }
-    return {
-      id: p.id,
-      title: p.title,
-      state: "active" as const,
-      ratioLabel: total > 0 ? `${completed}/${total}` : undefined,
-    };
-  });
-}
-
 function orderedTasks(roadmap: DashboardRoadmapForWorkspace) {
   const phases = [...roadmap.phases].sort((a, b) => a.order - b.order);
   const out: DashboardRoadmapPhase["tasks"][number][] = [];

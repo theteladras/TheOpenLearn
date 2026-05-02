@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link, getPathname } from "@/i18n/navigation";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { WalletStrip } from "@/components/app/wallet-strip";
+import { learnerXpProgress } from "@/lib/xp-level";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,10 +22,12 @@ const triggerClass =
 export function AppUserButton({
   plan,
   coins,
+  xpTotal,
   labels,
 }: {
   plan: string;
   coins: number;
+  xpTotal: number;
   labels: {
     openWallet: string;
     walletBalance: string;
@@ -56,6 +59,9 @@ export function AppUserButton({
   const email = user.primaryEmailAddress?.emailAddress;
   const displayName =
     user.fullName || user.firstName || email || tDash("userMenuFallbackName");
+
+  const xpProg = learnerXpProgress(xpTotal);
+  const fmt = (n: number) => n.toLocaleString(locale);
 
   return (
     <DropdownMenu modal={false}>
@@ -92,6 +98,37 @@ export function AppUserButton({
           {email ?
             <p className="truncate text-xs text-[var(--muted)]">{email}</p>
           : null}
+          <div className="mt-3 space-y-1.5">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-xs font-bold tracking-wide text-[var(--accent)]">
+                {tDash("workspaceLevelPrefix", { level: xpProg.level })}
+              </span>
+              <span className="text-[0.65rem] tabular-nums text-[var(--muted)]">
+                {tDash("userMenuXpTotal", { xp: fmt(xpProg.xpTotal) })}
+              </span>
+            </div>
+            <div
+              className="h-2.5 w-full overflow-hidden rounded-sm border border-[var(--border)]/80 bg-black/25 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] dark:bg-black/45"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={xpProg.xpInSegment}
+              aria-valuenow={xpProg.xpIntoLevel}
+              aria-label={tDash("userMenuXpProgressAria")}
+            >
+              <div
+                className="h-full min-w-0 rounded-sm bg-gradient-to-b from-[var(--accent)] via-violet-400 to-[color-mix(in_srgb,var(--accent)_75%,#1e1b4b)] shadow-[0_0_12px_rgba(139,92,246,0.35)] transition-[width] duration-500 ease-out dark:from-[var(--accent)] dark:via-violet-400 dark:to-indigo-900 dark:shadow-[0_0_14px_rgba(167,139,250,0.28)]"
+                style={{
+                  width: `${Math.min(100, Math.max(0, xpProg.pct))}%`,
+                }}
+              />
+            </div>
+            <p className="text-[0.65rem] leading-tight text-[var(--muted)]">
+              {tDash("userMenuXpSegment", {
+                current: fmt(xpProg.xpIntoLevel),
+                need: fmt(xpProg.xpInSegment),
+              })}
+            </p>
+          </div>
         </div>
 
         <div className="space-y-2 p-2">

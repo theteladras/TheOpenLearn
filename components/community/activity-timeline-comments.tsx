@@ -1,5 +1,6 @@
 "use client";
 
+import type { FeedActivityTarget } from "@prisma/client";
 import { useEffect, useState, useTransition } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
@@ -53,7 +54,7 @@ export function ActivityTimelineComments({
   anonLabel,
   labels,
 }: {
-  targetKind: "TASK_COMPLETION" | "BADGE_EARNED";
+  targetKind: FeedActivityTarget;
   targetId: string;
   initialComments: ActivityCommentClientModel[];
   viewerUserId: string | null;

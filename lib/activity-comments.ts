@@ -27,6 +27,12 @@ export function activityToCommentTarget(item: CommunityActivityItem): {
       targetId: item.progressId,
     };
   }
+  if (item.kind === "coach") {
+    return {
+      targetKind: FeedActivityTarget.TASK_COACH,
+      targetId: item.coachActivityId,
+    };
+  }
   return {
     targetKind: FeedActivityTarget.BADGE_EARNED,
     targetId: item.userAchievementId,

@@ -13,10 +13,8 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { DashboardAnalytics } from "@/features/dashboard/dashboard-analytics";
 import { DashboardHeroPulseCta } from "@/features/dashboard/dashboard-hero-pulse-cta";
-import { DashboardPhaseStrip } from "@/features/dashboard/dashboard-phase-strip";
 import { getOrCreateAppUser } from "@/lib/auth-user";
 import {
-  buildPhaseSteps,
   buildUpNextItems,
   featuredProgressPct,
   getContinueHref,
@@ -119,7 +117,6 @@ export default async function DashboardPage({ params }: Props) {
   const rest = roadmaps.slice(1);
 
   const workspaceRoadmap = featured as DashboardRoadmapForWorkspace | null;
-  const phaseSteps = buildPhaseSteps(workspaceRoadmap);
   const continueHref =
     workspaceRoadmap ?
       getContinueHref(workspaceRoadmap)
@@ -147,11 +144,6 @@ export default async function DashboardPage({ params }: Props) {
 
           {featured ?
             <>
-              <DashboardPhaseStrip
-                title={t("workspacePathTitle")}
-                phases={phaseSteps}
-              />
-
               <div className="grid gap-3 md:grid-cols-5 md:gap-4">
                 <div className="space-y-3 md:col-span-3">
                   <div className="rounded-xl border border-[var(--border)]/70 bg-[var(--accent-soft)]/35 p-3 dark:bg-[var(--accent-soft)]/15 sm:p-4">

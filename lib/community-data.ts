@@ -22,6 +22,77 @@ function toNum(n: unknown): number {
   return Number(n ?? 0);
 }
 
+const taskCoachActivitySelect = {
+  id: true,
+  createdAt: true,
+  userId: true,
+  roadmapId: true,
+  userMessageExcerpt: true,
+  assistantExcerpt: true,
+  user: { select: { displayName: true } },
+  task: {
+    select: {
+      id: true,
+      title: true,
+      phase: {
+        select: {
+          roadmap: { select: { id: true, title: true } },
+        },
+      },
+    },
+  },
+} as const;
+
+type CoachRow = {
+  id: string;
+  createdAt: Date;
+  userId: string;
+  roadmapId: string;
+  userMessageExcerpt: string;
+  assistantExcerpt: string;
+  user: { displayName: string | null };
+  task: {
+    id: string;
+    title: string;
+    phase: { roadmap: { id: string; title: string } };
+  };
+};
+
+/**
+ * Handles dev caches where `prisma generate` ran after the server started: delegate can be missing until reload.
+ */
+async function findTaskCoachActivities(
+  where: { user: Prisma.UserWhereInput } | { userId: string },
+  take: number,
+): Promise<CoachRow[]> {
+  const delegate = (
+    prisma as unknown as {
+      taskCoachActivity?: {
+        findMany: (args: {
+          where: typeof where;
+          orderBy: { createdAt: "desc" };
+          take: number;
+          select: typeof taskCoachActivitySelect;
+        }) => Promise<CoachRow[]>;
+      };
+    }
+  ).taskCoachActivity;
+  if (!delegate) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn(
+        "[TheOpenLearn] Prisma client has no taskCoachActivity model. Run `npx prisma generate`, remove `.next`, then `npm run dev`.",
+      );
+    }
+    return [];
+  }
+  return delegate.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    take,
+    select: taskCoachActivitySelect,
+  });
+}
+
 function rowToMember(r: RawRow): CommunityMemberStats {
   return {
     userId: r.id,
@@ -151,10 +222,27 @@ export type CommunityActivityItem =
       badgeTitle: string;
       badgeIcon: string | null;
       userAchievementId: string;
+    }
+  | {
+      kind: "coach";
+      at: Date;
+      userId: string;
+      displayName: string | null;
+      taskTitle: string;
+      roadmapTitle: string;
+      roadmapId: string;
+      taskId: string;
+      coachActivityId: string;
+      /**
+       * Only included for the viewer’s own coach rows. Omitted on the public timeline
+       * so other learners never see chat content.
+       */
+      userMessageExcerpt: string | null;
+      assistantExcerpt: string | null;
     };
 
 export type CommunityFeedScope = "all" | "following";
-export type CommunityFeedKind = "all" | "task" | "badge";
+export type CommunityFeedKind = "all" | "task" | "badge" | "coach";
 
 /**
  * Activity feed: public learners only. `following` limits to user IDs the viewer follows (intersected with profilePublic).
@@ -186,10 +274,11 @@ export async function getCommunityActivityFeed(opts: {
       : {}),
   };
 
-  const wantTasks = opts.kind !== "badge";
-  const wantBadges = opts.kind !== "task";
+  const wantTasks = opts.kind === "all" || opts.kind === "task";
+  const wantBadges = opts.kind === "all" || opts.kind === "badge";
+  const wantCoach = opts.kind === "all" || opts.kind === "coach";
 
-  const [tasks, badges] = await Promise.all([
+  const [tasks, badges, coachRows] = await Promise.all([
     wantTasks
       ? prisma.userTaskProgress.findMany({
           where: {
@@ -233,9 +322,15 @@ export async function getCommunityActivityFeed(opts: {
           },
         })
       : Promise.resolve([]),
+    wantCoach
+      ? findTaskCoachActivities({ user: userWhere }, take)
+      : Promise.resolve([]),
   ]);
 
-  const publicItems = rowsToActivityItems(tasks, badges);
+  const publicItems = [
+    ...rowsToActivityItems(tasks, badges),
+    ...coachRowsToActivityItems(coachRows, false),
+  ];
 
   /** Viewer always sees their own completions/badges here, even with a private profile. */
   let viewerItems: CommunityActivityItem[] = [];
@@ -298,15 +393,41 @@ function rowsToActivityItems(
   ];
 }
 
+function coachRowsToActivityItems(
+  rows: CoachRow[],
+  includeExcerpts: boolean,
+): CommunityActivityItem[] {
+  return rows.map((row) => ({
+    kind: "coach" as const,
+    at: row.createdAt,
+    userId: row.userId,
+    displayName: row.user.displayName,
+    taskTitle: row.task.title,
+    roadmapTitle: row.task.phase.roadmap.title,
+    roadmapId: row.roadmapId,
+    taskId: row.task.id,
+    coachActivityId: row.id,
+    userMessageExcerpt:
+      includeExcerpts && row.userMessageExcerpt.trim()
+        ? row.userMessageExcerpt.trim()
+        : null,
+    assistantExcerpt:
+      includeExcerpts && row.assistantExcerpt.trim()
+        ? row.assistantExcerpt.trim()
+        : null,
+  }));
+}
+
 async function fetchActivityItemsForSingleUser(opts: {
   userId: string;
   kind: CommunityFeedKind;
   take: number;
 }): Promise<CommunityActivityItem[]> {
-  const wantTasks = opts.kind !== "badge";
-  const wantBadges = opts.kind !== "task";
+  const wantTasks = opts.kind === "all" || opts.kind === "task";
+  const wantBadges = opts.kind === "all" || opts.kind === "badge";
+  const wantCoach = opts.kind === "all" || opts.kind === "coach";
 
-  const [tasks, badges] = await Promise.all([
+  const [tasks, badges, coachRows] = await Promise.all([
     wantTasks
       ? prisma.userTaskProgress.findMany({
           where: {
@@ -350,15 +471,21 @@ async function fetchActivityItemsForSingleUser(opts: {
           },
         })
       : Promise.resolve([]),
+    wantCoach
+      ? findTaskCoachActivities({ userId: opts.userId }, opts.take)
+      : Promise.resolve([]),
   ]);
 
-  return rowsToActivityItems(tasks, badges);
+  return [
+    ...rowsToActivityItems(tasks, badges),
+    ...coachRowsToActivityItems(coachRows, true),
+  ];
 }
 
 function itemDedupeKey(item: CommunityActivityItem): string {
-  return item.kind === "task"
-    ? `task:${item.progressId}`
-    : `badge:${item.userAchievementId}`;
+  if (item.kind === "task") return `task:${item.progressId}`;
+  if (item.kind === "badge") return `badge:${item.userAchievementId}`;
+  return `coach:${item.coachActivityId}`;
 }
 
 /** Merges lists; primary rows win on duplicate keys so display names stay consistent. */

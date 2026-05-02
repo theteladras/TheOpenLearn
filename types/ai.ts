@@ -126,8 +126,11 @@ export type TaskQuizQuestion = {
 export type GeneratedEvaluation = {
   /** Markdown one-liner or short paragraph. */
   summary: string;
-  /** 1–5 multiple-choice questions grounded in this task (see generation prompt). */
-  quiz: TaskQuizQuestion[];
+  /**
+   * 2–4 interchangeable MCQ sets per task. After a failed attempt the app shows the next set
+   * (same objectives, different stems/distractors). Stored as JSON `{ variants: [...] }`.
+   */
+  quizVariants: TaskQuizQuestion[][];
   /** Markdown; short hint for what to attach in notes. */
   checkpointDescription: string;
 };
@@ -139,8 +142,8 @@ export type GeneratedTask = {
   /** Markdown; emphasize *why* the step matters. */
   whyMatters: string;
   /**
-   * Markdown — the model's concrete guidance: what to open first, what to skim vs read,
-   * named pitfalls, and what “done” looks like. Must not be only “visit the documentation”.
+   * Markdown — learner **deep dive**: descriptive ## sections with why/mechanism, how to think,
+   * pitfalls, success criteria, and a memory-oriented segment. Not admin steps (those go in instructions).
    */
   mentorPerspective: string;
   /** Markdown; steps read best with short paragraphs or bullet lists. */

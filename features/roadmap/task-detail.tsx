@@ -22,9 +22,20 @@ import {
 } from "@/components/rewards/celebration-overlay";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { LearningRichText } from "@/components/learning/learning-rich-text";
-import { parseTaskQuizQuestions } from "@/lib/task-quiz";
+import {
+  activeQuizVariant,
+  parseTaskQuizBank,
+  taskBankHasQuiz,
+} from "@/lib/task-quiz";
 import type { TaskQuizQuestion } from "@/types/ai";
 import { createLessonHandbookPurchase } from "@/server/actions/lesson-handbook-actions";
 import {
@@ -126,16 +137,41 @@ export function TaskDetail({
   const [writingTab, setWritingTab] = useState<"note" | "comment">("note");
   const [handbookOwned, setHandbookOwned] = useState(handbookOwnedProp);
   const [handbookBusy, setHandbookBusy] = useState(false);
+  const [quizOpen, setQuizOpen] = useState(false);
 
   useEffect(() => {
     setHandbookOwned(handbookOwnedProp);
   }, [handbookOwnedProp, task.id]);
 
-  const questions: TaskQuizQuestion[] = useMemo(
-    () => parseTaskQuizQuestions(task.evaluation?.quizQuestions ?? null),
+  const quizBank = useMemo(
+    () => parseTaskQuizBank(task.evaluation?.quizQuestions ?? null),
     [task.evaluation?.quizQuestions],
   );
-  const hasQuiz = questions.length > 0;
+  const hasQuiz = taskBankHasQuiz(quizBank);
+
+  const [quizPassed, setQuizPassed] = useState(() =>
+    Boolean(task.quizPassedAt),
+  );
+  const [submissionCount, setSubmissionCount] = useState(
+    task.quizSubmissionCount,
+  );
+  const [failCount, setFailCount] = useState(task.quizFailCount);
+  /** Question indices (0-based) marked wrong after the last graded submit. */
+  const [wrongIndicesAfterSubmit, setWrongIndicesAfterSubmit] = useState<
+    number[] | null
+  >(null);
+
+  const activeQuestions: TaskQuizQuestion[] = useMemo(
+    () => activeQuizVariant(quizBank, failCount),
+    [quizBank, failCount],
+  );
+
+  const [selections, setSelections] = useState<number[]>(() =>
+    activeQuizVariant(
+      parseTaskQuizBank(task.evaluation?.quizQuestions ?? null),
+      task.quizFailCount,
+    ).map(() => -1),
+  );
 
   const keywordTerms = useMemo(
     () => task.keyTerms.map((s) => s.trim()).filter(Boolean),
@@ -159,23 +195,7 @@ export function TaskDetail({
     Boolean(task.whyMatters?.trim()) ||
     task.resources.length > 0 ||
     Boolean(task.evaluation?.checkpointDescription?.trim()) ||
-    keywordTerms.length > 0 ||
-    sideFactLines.length > 0;
-
-  const [quizPassed, setQuizPassed] = useState(() =>
-    Boolean(task.quizPassedAt),
-  );
-  const [submissionCount, setSubmissionCount] = useState(
-    task.quizSubmissionCount,
-  );
-  const [failCount, setFailCount] = useState(task.quizFailCount);
-  /** Question indices (0-based) marked wrong after the last graded submit. */
-  const [wrongIndicesAfterSubmit, setWrongIndicesAfterSubmit] = useState<
-    number[] | null
-  >(null);
-  const [selections, setSelections] = useState<number[]>(() =>
-    questions.map(() => -1),
-  );
+    keywordTerms.length > 0;
 
   const onCelebrationClose = useCallback(() => {
     setCelebrationOpen(false);
@@ -205,9 +225,10 @@ export function TaskDetail({
     setSubmissionCount(task.quizSubmissionCount);
     setFailCount(task.quizFailCount);
     setSelections(
-      parseTaskQuizQuestions(task.evaluation?.quizQuestions ?? null).map(
-        () => -1,
-      ),
+      activeQuizVariant(
+        parseTaskQuizBank(task.evaluation?.quizQuestions ?? null),
+        task.quizFailCount,
+      ).map(() => -1),
     );
     setWrongIndicesAfterSubmit(null);
   }, [
@@ -217,6 +238,18 @@ export function TaskDetail({
     task.quizFailCount,
     task.evaluation?.quizQuestions,
   ]);
+
+  useEffect(() => {
+    if (quizPassed) setQuizOpen(false);
+  }, [quizPassed]);
+
+  useEffect(() => {
+    setSelections((prev) => {
+      const n = activeQuestions.length;
+      if (prev.length === n && n > 0) return prev;
+      return activeQuestions.map(() => -1);
+    });
+  }, [activeQuestions]);
 
   const canComplete = hasQuiz && quizPassed;
   const completeHint = canComplete
@@ -269,11 +302,12 @@ export function TaskDetail({
       if (r.passed) {
         setQuizPassed(true);
         setWrongIndicesAfterSubmit(null);
+        setQuizOpen(false);
         toast.success(t("quizPassed"));
       } else {
         const wrong = r.wrongIndices ?? [];
         setWrongIndicesAfterSubmit(wrong);
-        const total = r.total ?? questions.length;
+        const total = r.total ?? activeQuestions.length;
         const correct = r.correctCount ?? 0;
         toast.error(t("quizFailedToastTitle"), {
           description:
@@ -376,14 +410,20 @@ export function TaskDetail({
       />
 
       {task.explanation?.trim() && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base text-[var(--foreground)]">
-              {t("overview")}
+        <Card className="border-[var(--accent)]/30 bg-[var(--accent-soft)]/[0.12] shadow-md ring-1 ring-[var(--border)]/50 dark:bg-[var(--accent-soft)]/10">
+          <CardHeader className="space-y-2 pb-3">
+            <CardTitle className="text-xl font-semibold tracking-tight text-[var(--foreground)] sm:text-2xl">
+              {t("lessonLeadTitle")}
             </CardTitle>
+            <p className="text-sm font-normal leading-relaxed text-[var(--muted)] sm:text-[0.9375rem]">
+              {t("lessonLeadHint")}
+            </p>
           </CardHeader>
-          <CardContent className="text-[var(--muted)] leading-relaxed">
-            <LearningRichText content={task.explanation} />
+          <CardContent className="pt-0">
+            <LearningRichText
+              content={task.explanation}
+              className="text-base leading-relaxed text-[var(--foreground)] sm:text-[1.0625rem] sm:leading-[1.7] [&_h2]:mt-5 [&_h2]:text-[1.125rem] [&_h2]:font-semibold [&_h2]:tracking-tight sm:[&_h2]:text-[1.25rem] [&_h3]:mt-4 [&_h3]:text-base [&_h3]:font-semibold sm:[&_h3]:text-[1.0625rem]"
+            />
           </CardContent>
         </Card>
       )}
@@ -558,29 +598,6 @@ export function TaskDetail({
                 </CardContent>
               </Card>
             )}
-            {sideFactLines.length > 0 && (
-              <Card className="border-amber-500/25 bg-amber-500/[0.06] dark:bg-amber-500/[0.08]">
-                <CardHeader className="space-y-1 pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Lightbulb
-                      className="size-4 shrink-0 text-amber-600 dark:text-amber-400"
-                      aria-hidden
-                    />
-                    {t("funFactsTitle")}
-                  </CardTitle>
-                  <p className="text-xs font-normal leading-relaxed text-[var(--muted)]">
-                    {t("funFactsHint")}
-                  </p>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <ul className="list-disc space-y-2.5 pl-4 text-sm leading-relaxed text-[var(--foreground)] marker:text-amber-600/70 dark:marker:text-amber-400/70">
-                    {sideFactLines.map((line, i) => (
-                      <li key={i}>{line}</li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            )}
             {task.evaluation?.checkpointDescription?.trim() && (
               <Card className="border-[var(--border)]/90 bg-[var(--card)] ring-1 ring-[var(--border)]/50">
                 <CardHeader className="space-y-1 pb-2">
@@ -641,104 +658,169 @@ export function TaskDetail({
                         })}
                       </p>
                     )}
-                    <div className="space-y-6">
-                      {questions.map((q, qi) => {
-                        const showWrongHint =
-                          wrongIndicesAfterSubmit?.includes(qi) ?? false;
-                        return (
-                          <div key={qi} className="space-y-3">
-                            <div>
-                              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                                {t("quizQuestion", { n: qi + 1 })}
-                              </p>
-                              <div className="mt-1.5 text-sm leading-snug text-[var(--foreground)]">
-                                <LearningRichText content={q.question} />
-                              </div>
-                            </div>
-                            <div className="space-y-2" role="radiogroup">
-                              {q.choices.map((choice, ci) => {
-                                const isCorrect = ci === q.correctIndex;
-                                const selected = selections[qi] === ci;
-                                const showReview =
-                                  status === "COMPLETED" || quizPassed;
-                                return (
-                                  <label
-                                    key={ci}
-                                    className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3.5 py-2.5 text-sm transition-colors ${
-                                      showReview && isCorrect
-                                        ? "border-emerald-500/50 bg-emerald-500/10"
-                                        : showReview && selected && !isCorrect
-                                          ? "border-rose-500/40 bg-rose-500/10"
-                                          : selected
-                                            ? "border-[var(--accent)]/50 bg-[var(--accent-soft)]/25"
-                                            : "border-[var(--border)]/90 bg-[var(--card)] hover:border-[var(--accent)]/30"
-                                    } ${status === "COMPLETED" || (quizPassed && showReview) ? "cursor-default" : ""}`}
-                                  >
-                                    <input
-                                      type="radio"
-                                      className="mt-1 size-4 shrink-0 accent-[var(--accent)]"
-                                      name={`q-${task.id}-${qi}`}
-                                      checked={selected}
-                                      disabled={
-                                        status === "COMPLETED" || quizPassed
-                                      }
-                                      onChange={() => {
-                                        setWrongIndicesAfterSubmit(null);
-                                        setSelections((prev) => {
-                                          const next = [...prev];
-                                          next[qi] = ci;
-                                          return next;
-                                        });
-                                      }}
-                                    />
-                                    <span className="leading-snug">
-                                      {choice}
-                                    </span>
-                                  </label>
-                                );
-                              })}
-                            </div>
-                            {showWrongHint &&
-                              status === "AVAILABLE" &&
-                              !quizPassed && (
-                                <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-800 dark:text-rose-200">
-                                  {t("quizQuestionWrong", {
-                                    n: qi + 1,
-                                    correct: q.choices[q.correctIndex] ?? "",
-                                  })}
-                                </p>
-                              )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {status === "AVAILABLE" && !quizPassed && (
-                      <div className="space-y-2">
+                    {status === "AVAILABLE" && !quizPassed ? (
+                      <div className="space-y-3">
                         <p className="text-xs text-[var(--muted)]">
-                          {t("quizSubmitHelp")}
+                          {t("quizStartHint")}
                         </p>
                         <Button
                           type="button"
-                          variant="secondary"
                           className="gap-2"
                           disabled={quizBusy}
-                          onClick={() => void onQuizSubmit()}
+                          onClick={() => {
+                            setWrongIndicesAfterSubmit(null);
+                            setQuizOpen(true);
+                          }}
                         >
-                          {quizBusy ? (
-                            <>
-                              <Loader2 className="size-4 shrink-0 animate-spin" />
-                              {t("quizChecking")}
-                            </>
-                          ) : (
-                            t("quizSubmit")
-                          )}
+                          {t("quizStartSelfCheck")}
                         </Button>
                       </div>
-                    )}
+                    ) : quizPassed || status === "COMPLETED" ? (
+                      <div className="space-y-6">
+                        {activeQuestions.map((q, qi) => {
+                          return (
+                            <div key={qi} className="space-y-3">
+                              <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                                  {t("quizQuestion", { n: qi + 1 })}
+                                </p>
+                                <div className="mt-1.5 text-sm leading-snug text-[var(--foreground)]">
+                                  <LearningRichText content={q.question} />
+                                </div>
+                              </div>
+                              <div className="space-y-2" role="radiogroup">
+                                {q.choices.map((choice, ci) => {
+                                  const isCorrect = ci === q.correctIndex;
+                                  const selected = selections[qi] === ci;
+                                  return (
+                                    <label
+                                      key={ci}
+                                      className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3.5 py-2.5 text-sm transition-colors ${
+                                        isCorrect
+                                          ? "border-emerald-500/50 bg-emerald-500/10"
+                                          : selected && !isCorrect
+                                            ? "border-rose-500/40 bg-rose-500/10"
+                                            : "border-[var(--border)]/90 bg-[var(--card)]"
+                                      } cursor-default`}
+                                    >
+                                      <input
+                                        type="radio"
+                                        className="mt-1 size-4 shrink-0 accent-[var(--accent)]"
+                                        name={`q-${task.id}-review-${qi}`}
+                                        checked={selected}
+                                        disabled
+                                      />
+                                      <span className="leading-snug">
+                                        {choice}
+                                      </span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : null}
                   </>
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {hasQuiz && status === "AVAILABLE" && !quizPassed && (
+            <Dialog open={quizOpen} onOpenChange={setQuizOpen}>
+              <DialogContent
+                overlayClassName="bg-black/85 backdrop-blur-md"
+                className="max-h-[min(90vh,720px)] w-[calc(100%-2rem)] max-w-xl gap-0 border-[var(--border)] p-0 sm:max-w-xl"
+              >
+                <div className="max-h-[min(90vh,720px)] overflow-y-auto p-6 pr-12 sm:pr-14">
+                  <DialogHeader className="space-y-2 text-left">
+                    <DialogTitle>{t("quizModalTitle")}</DialogTitle>
+                    <DialogDescription>{t("quizModalHint")}</DialogDescription>
+                  </DialogHeader>
+                  <div className="mt-5 space-y-6">
+                    {activeQuestions.map((q, qi) => {
+                      const showWrongHint =
+                        wrongIndicesAfterSubmit?.includes(qi) ?? false;
+                      return (
+                        <div key={qi} className="space-y-3">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                              {t("quizQuestion", { n: qi + 1 })}
+                            </p>
+                            <div className="mt-1.5 text-sm leading-snug text-[var(--foreground)]">
+                              <LearningRichText content={q.question} />
+                            </div>
+                          </div>
+                          <div className="space-y-2" role="radiogroup">
+                            {q.choices.map((choice, ci) => {
+                              const selected = selections[qi] === ci;
+                              return (
+                                <label
+                                  key={ci}
+                                  className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3.5 py-2.5 text-sm transition-colors ${
+                                    selected
+                                      ? "border-[var(--accent)]/50 bg-[var(--accent-soft)]/25"
+                                      : "border-[var(--border)]/90 bg-[var(--card)] hover:border-[var(--accent)]/30"
+                                  }`}
+                                >
+                                  <input
+                                    type="radio"
+                                    className="mt-1 size-4 shrink-0 accent-[var(--accent)]"
+                                    name={`q-${task.id}-modal-${qi}`}
+                                    checked={selected}
+                                    disabled={quizBusy}
+                                    onChange={() => {
+                                      setWrongIndicesAfterSubmit(null);
+                                      setSelections((prev) => {
+                                        const next = [...prev];
+                                        next[qi] = ci;
+                                        return next;
+                                      });
+                                    }}
+                                  />
+                                  <span className="leading-snug">{choice}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                          {showWrongHint && (
+                            <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-800 dark:text-rose-200">
+                              {t("quizQuestionWrong", {
+                                n: qi + 1,
+                                correct: q.choices[q.correctIndex] ?? "",
+                              })}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-6 space-y-2 border-t border-[var(--border)]/80 pt-5">
+                    <p className="text-xs text-[var(--muted)]">
+                      {t("quizSubmitHelp")}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="gap-2"
+                      disabled={quizBusy}
+                      onClick={() => void onQuizSubmit()}
+                    >
+                      {quizBusy ? (
+                        <>
+                          <Loader2 className="size-4 shrink-0 animate-spin" />
+                          {t("quizChecking")}
+                        </>
+                      ) : (
+                        t("quizSubmit")
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           )}
 
           <AnimatePresence mode="wait">
@@ -920,6 +1002,30 @@ export function TaskDetail({
               )}
             </AnimatePresence>
           </Card>
+
+          {sideFactLines.length > 0 && (
+            <Card className="border-amber-500/25 bg-amber-500/[0.06] dark:bg-amber-500/[0.08]">
+              <CardHeader className="space-y-1 pb-2">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Lightbulb
+                    className="size-4 shrink-0 text-amber-600 dark:text-amber-400"
+                    aria-hidden
+                  />
+                  {t("funFactsTitle")}
+                </CardTitle>
+                <p className="text-xs font-normal leading-relaxed text-[var(--muted)]">
+                  {t("funFactsHint")}
+                </p>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <ul className="list-disc space-y-2.5 pl-4 text-sm leading-relaxed text-[var(--foreground)] marker:text-amber-600/70 dark:marker:text-amber-400/70">
+                  {sideFactLines.map((line, i) => (
+                    <li key={i}>{line}</li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

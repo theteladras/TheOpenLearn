@@ -36,6 +36,8 @@ enum UserPlan {
 enum FeedActivityTarget {
   TASK_COMPLETION
   BADGE_EARNED
+  /** Lesson-scoped AI guide exchange; `FeedComment.targetId` = `TaskCoachActivity.id`. */
+  TASK_COACH
 }
 
 model User {
@@ -71,6 +73,7 @@ model User {
   follows            UserFollow[] @relation("UserFollows")
   followedBy         UserFollow[] @relation("UserFollowedBy")
   feedComments       FeedComment[]
+  taskCoachActivities TaskCoachActivity[]
 }
 
 /** Threaded discussion on a public feed item (lesson completion or badge). */
@@ -207,10 +210,28 @@ model RoadmapTask {
   evaluation   TaskEvaluation?
   progress     UserTaskProgress[]
   handbooks    LessonHandbook[]
+  coachActivities TaskCoachActivity[]
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
   @@index([phaseId, order])
+}
+
+/** Logged when a learner sends a message to the lesson AI guide (activity timeline). */
+model TaskCoachActivity {
+  id                  String   @id @default(cuid())
+  userId              String
+  user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId              String
+  task                RoadmapTask  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  /** Denormalized for feed queries (same as task.phase.roadmapId at write time). */
+  roadmapId           String
+  userMessageExcerpt  String   @db.VarChar(500)
+  assistantExcerpt    String   @db.VarChar(2000)
+  createdAt           DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
 }
 
 /** AI-generated reference handbook (JSON) purchased with coins after a lesson is complete. */

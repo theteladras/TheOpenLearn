@@ -6,7 +6,7 @@ export function parseActivityScope(raw: string | undefined): CommunityFeedScope 
 }
 
 export function parseActivityKind(raw: string | undefined): CommunityFeedKind {
-  if (raw === "task" || raw === "badge") return raw;
+  if (raw === "task" || raw === "badge" || raw === "coach") return raw;
   return "all";
 }
 

@@ -29,6 +29,7 @@ export default async function AppLayout({
       <AppSidebar
         plan={user.plan}
         coins={user.coins}
+        xpTotal={user.xpTotal}
         labels={{
           dashboard: t("title"),
           newLearning: t("newRoadmap"),

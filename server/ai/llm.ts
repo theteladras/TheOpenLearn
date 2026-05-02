@@ -126,8 +126,11 @@ const quizQuestionSchema = z
 
 const generatedEvaluationSchema = z.object({
   summary: modelString,
-  /** 1–5 MCQs per task; count is model-chosen (prompt asks for variety across tasks). */
-  quiz: z.array(quizQuestionSchema).min(1).max(5),
+  /** 2–4 interchangeable MCQ sets; learner sees one at a time; rotates after failed attempts. */
+  quizVariants: z
+    .array(z.array(quizQuestionSchema).min(1).max(5))
+    .min(2)
+    .max(4),
   checkpointDescription: modelString,
 });
 
@@ -275,7 +278,10 @@ function withResolvedLessonTimes(roadmap: ParsedGeneratedRoadmap): GeneratedRoad
           mentorPerspective: t.mentorPerspective,
           instructions: t.instructions,
           whyMatters: t.whyMatters,
-          quizCount: t.evaluation.quiz.length,
+          quizCount: Math.max(
+            ...t.evaluation.quizVariants.map((v) => v.length),
+            0,
+          ),
           resourceCount: t.resources.length,
           storedEstimatedMinutes: t.estimatedMinutes,
           xpReward: t.xpReward,
@@ -720,7 +726,7 @@ Return ONLY JSON with this exact structure:
           "title": "task title",
           "explanation": "markdown — the Overview mini-lesson (see Pedagogy rules below)",
           "whyMatters": "markdown",
-          "mentorPerspective": "markdown — linear walkthrough ONLY: 3–6 segments, each starting with an h2 heading on its own line: ## First idea … ## Next idea … Write in a clear, conversational tone (like a patient tutor going step by step). Each segment connects to the next; use relatable framing and plain language. When sources are well-known sites, name concrete sections to open. Include one pitfall and what “done” looks like inside this flow—not as a separate meta lecture. Never output only “visit the link”.",
+          "mentorPerspective": "markdown — **Deep dive** for the learner: **4–6** segments, each starting with its own line: ## Descriptive title (name the real concept—do **not** use headings that are only “First idea” / “Next idea” without the topic in the title). Across segments, make **why** (causes, mechanisms, consequences) and **how to think** (mental model, rule of thumb, contrast) obvious—not a flat list of facts. Include **one segment** near the end aimed at **memory** (e.g. ## Remember this / ## If you forget everything else with an analogy, if–then pattern, or one crisp recap sentence). Order: orient → why it works → how to apply → pitfalls → what “done” looks like → memory anchor. Conversational tutor tone; when sources are well-known sites, name concrete sections to open. Never output only “visit the link”.",
           "instructions": "markdown — concrete hands-on steps only (numbered or bullets). No repeating the conceptual walkthrough from mentorPerspective.",
           "keyTerms": ["4–10 short phrases (2–5 words each): vocabulary and proper nouns the learner will see in this task—no duplicates; no generic words like “important” or “chapter”"],
           "recap": "markdown — 3–6 tight bullets (or one short paragraph): what the learner should remember or be able to do after this task—durable takeaways only; not a repeat of the Overview",
@@ -735,12 +741,21 @@ Return ONLY JSON with this exact structure:
           ],
           "evaluation": {
             "summary": "markdown — one short line framing the self-check",
-            "quiz": [
-              {
-                "question": "plain text — concrete MCQ stem grounded in THIS task (not generic)",
-                "choices": [ "exactly 3–5 distinct options as strings; one is correct" ],
-                "correctIndex": 0
-              }
+            "quizVariants": [
+              [
+                {
+                  "question": "plain text — concrete MCQ stem grounded in THIS task (not generic)",
+                  "choices": [ "exactly 3–5 distinct options as strings; one is correct" ],
+                  "correctIndex": 0
+                }
+              ],
+              [
+                {
+                  "question": "different stem — same learning objectives, different wording/options",
+                  "choices": [ "3–5 distinct strings; one correct" ],
+                  "correctIndex": 0
+                }
+              ]
             ],
             "checkpointDescription": "markdown — optional notes hint if they struggle"
           }
@@ -750,7 +765,7 @@ Return ONLY JSON with this exact structure:
   ]
 }
 
-The JSON skeleton shows one quiz item for brevity only; each real task’s evaluation.quiz array must contain **between 1 and 5** full question objects following the rules below (length varies per task).
+The JSON skeleton shows **one question per variant** for brevity only. Each real task’s **evaluation.quizVariants** must be an array of **2 to 4** variants; **each variant** is its own array of **1 to 5** full question objects (length may differ between variants and across tasks).
 
 Rules:
 - **Mastery & completeness (every task):**
@@ -778,9 +793,9 @@ Rules:
 - lessonCategory (required on every task): pick exactly ONE **canonical** slug from: general, mathematics, life-sciences, physical-sciences, computing, technology, design, languages, business, arts-humanities, health-wellbeing. Map the lesson’s real subject into these buckets (never invent new category names): e.g. biology/botany/genetics/neuroscience/medicine basics → **life-sciences**; chemistry/physics/astronomy → **physical-sciences**; programming/software → **computing**; cloud/security/ML platforms → **technology**; UX/UI/figma/visual product → **design**; languages/linguistics → **languages**; marketing/sales/finance/business strategy → **business**; politics/civics/music/film/history/philosophy/journalism/law (non-corporate)/sociology → **arts-humanities**; clinical health/nutrition/fitness therapy focus → **health-wellbeing**. Tasks in one roadmap may use different buckets when subjects differ.
 - achievementKeys (required on every task): JSON array of **0 to 3** lowercase **snake_case** strings (letters, digits, underscore; must start with a letter), each naming one concrete skill practiced **in this task**. Prefer known tags when they fit: react, nextjs, vue, svelte, angular, javascript, typescript, html_css, tailwindcss, nodejs, python, rust, go, java, csharp, sql, graphql, docker, kubernetes, aws, figma, music_theory, writing, public_speaking, data_analysis, machine_learning. If the lesson centers on another stack (e.g. kotlin, swiftui, postgres), you may use a **new** slug matching that pattern (the app will register milestones automatically). Use [] when the lesson is broad or not tied to a specific track—do not add vague tags.
 - Tie tasks to the supplied source and understanding; cite URLs from the source when present.
-- Every task MUST include mentorPerspective as a segmented walkthrough (see JSON shape) with real substance—not generic filler. Every task MUST include keyTerms with 4–10 distinct, task-specific phrases. Every task MUST include **recap** with **3–6** substantive bullets (or one short paragraph)—see Pedagogy; never empty or filler.
+- Every task MUST include mentorPerspective as a **deep dive** (see JSON shape and Pedagogy: mentorPerspective)—descriptive ## headings, explicit **why** and **how to reason**, plus a **memory-oriented** segment—not generic filler or sterile “idea 1, idea 2” labels. Every task MUST include keyTerms with 4–10 distinct, task-specific phrases. Every task MUST include **recap** with **3–6** substantive bullets (or one short paragraph)—see Pedagogy; never empty or filler.
 - **funFacts** (required on every task): JSON array of **2–3** short **plain-text** strings (no markdown). Each is a memorable “did you know” tied to this task’s domain—history, real-world use, a sharp analogy, or a learning-science tidbit **relevant to the subject**. Must **not** reveal quiz answers, restate recap bullets verbatim, or contradict the lesson. Language must match the journey.
-- evaluation.quiz: **1–5** question objects per task. **Vary the array length across tasks** in the roadmap—do not use the same count for every task (never “always two”). Use **1** for a narrow or warmup checkpoint; **2–3** for a typical lesson task; **4–5** when the task synthesizes several concepts or roadmapDepth is deep. Each question: one unambiguous correctIndex; at least two distinct choices; stems and distractors specific to this task—no generic literacy fluff.
+- evaluation.quizVariants: **2–4** parallel question sets per task. After a **failed** self-check, the learner sees the **next** set (rotate in array order). Every variant must test the **same learning objectives** for that task with **different stems and/or distractors**—do not reuse identical wording across variants. **Per variant**, include **1–5** questions (vary counts across tasks). Each question: one unambiguous correctIndex; at least two distinct choices; stems and distractors specific to this task—no generic literacy fluff.
 - language must match the journey (from input).
 
 Pedagogy — explanation field (Overview) for EVERY task, all subjects:
@@ -796,10 +811,15 @@ Pedagogy — explanation field (Overview) for EVERY task, all subjects:
 - Aim for enough depth that someone new to this task could read only the Overview and understand what they are doing and why—without repeating the entire instructions section.
 - **whyMatters**: minimum **two sentences** that tie this step to the journey outcome—no one-line platitudes.
 - **instructions**: concrete procedural steps only—hands-on checklist style. For **standard** or **deep** journeys, prefer **4–10** numbered or bulleted steps unless the task is a micro-checkpoint (then fewer is OK; state the quick win). Do not restate the walkthrough from mentorPerspective here.
-- **mentorPerspective**: the learner-facing “topic path”—not admin instructions. Use **##** headings for each segment; build ideas in order; for **deep** roadmaps, name doc sections, compare approaches, and note tradeoffs inside those segments.
+- **mentorPerspective** (learner **deep dive**—not admin steps): **4–6** markdown segments separated by **##** headings.
+  - **Headings:** Every **##** line must be a **specific, human title** (e.g. “Why overwatering rots roots”, “How to read the soil before you pour”). **Do not** use vague labels like “First idea”, “Next idea”, or “Part 2” as the whole heading—readers confuse those with filler.
+  - **Why & how:** In most segments, lead with **why** something is true or matters (cause → effect, mechanism, or goal), then **how** to apply or recognize it (process, signal, rule of thumb). Use contrasts (“unlike X, here…”) and mini-stories where they clarify memory.
+  - **Memory:** Include **one** segment whose heading signals retention (e.g. “Remember this”, “One sentence to keep”, “Quick mental model”) with a mnemonic, if–then rule, or sharp analogy—something the learner can recall under pressure.
+  - **Pitfalls & done:** Work in at least one **common mistake** and what **success looks like** for this task (can be separate segments or woven in).
+  - **Depth:** For **deep** roadmaps, name doc sections, compare approaches, and note tradeoffs inside the relevant segments—not as a separate abstract lecture.
 - **keyTerms**: proper nouns, technical terms, and named models or ideologies that appear in this task—usable as encyclopedia search queries.
 - **recap**: end-of-lesson memory anchor—**3–6** bullets (preferred) or one tight paragraph. Each point should be **specific** to this task: ideas, distinctions, or skills to retain—not generic study tips, not a copy of the Overview, not “you learned about X”. Start bullets with strong verbs or crisp noun phrases when possible. **Include exactly one teach-back bullet** (see Rules: mastery & completeness).
-- instructions should stay procedural (step list); conceptual teaching stays in explanation; the walkthrough bridges explanation → action without duplicating the Overview essay.
+- instructions should stay procedural (step list); conceptual teaching stays in explanation; mentorPerspective **connects** explanation to how to think and remember—without duplicating the Overview essay.
 `;
 
 const CONTINUATION_SUGGESTIONS_SYSTEM = `You suggest logical next learning paths after a learner completed an entire roadmap on a learning app.
@@ -953,11 +973,12 @@ export async function generateRoadmapWithProvider(
       "",
       "Design for **mastery and teach-back** (see system Rules): no quiz-only gaps; each task’s teaching blocks carry the understanding required for that task.",
       "Phases: recommended order = JSON array order; use **phase summaries** and **description** to note **reorder / parallel** options only when the subject truly supports it.",
-      "Per task, set evaluation.quiz to 1–5 questions and vary the count across tasks (mix of 1s, 2s, 3s, and occasional 4–5 for dense or capstone steps). Avoid giving every task the same number of questions.",
+      "Per task, set evaluation.quizVariants to **2–4** parallel sets; **each** set has 1–5 questions. Vary counts across tasks; avoid identical question counts for every task in the roadmap.",
       "Every task object MUST include estimatedMinutes (integer) computed from THAT task’s explanation, walkthrough, instruction steps, quiz length, and resource count—see Rules (no generic round numbers shared across tasks).",
       "Every task MUST include at least two resources when possible: primary + alternate URLs (see Rules).",
       "Every task MUST include a non-empty recap (see Pedagogy), including the **teach-back** bullet.",
       "Every task MUST include funFacts: **2–3** plain-text strings—sidebar bonus facts; not quiz spoilers (see Rules).",
+      "Every **mentorPerspective** must read as a **deep dive**: descriptive ## titles (no bare “First idea” / “Next idea”), clear **why** + **how to think**, and a **memory** segment—see Pedagogy.",
     ].join("\n"),
   );
   const parsed = normalizeParsedRoadmap(

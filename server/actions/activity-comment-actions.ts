@@ -45,6 +45,16 @@ async function assertPublicActivityCommentTarget(
     });
     return Boolean(row);
   }
+  if (targetKind === FeedActivityTarget.TASK_COACH) {
+    const row = await prisma.taskCoachActivity.findFirst({
+      where: {
+        id: targetId,
+        user: { profilePublic: true },
+      },
+      select: { id: true },
+    });
+    return Boolean(row);
+  }
   const row = await prisma.userAchievement.findFirst({
     where: {
       id: targetId,
