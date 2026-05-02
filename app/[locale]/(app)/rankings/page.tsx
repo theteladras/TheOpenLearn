@@ -21,6 +21,7 @@ import { parseSortMode, sortMembers, SORT_MODES } from "@/lib/community-sort";
 import { prisma } from "@/lib/db";
 import { TOPIC_CLUSTER_KEYS } from "@/lib/topic-cluster";
 import { cn } from "@/lib/utils";
+import { learnerLevelFromXp } from "@/lib/xp-level";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -145,7 +146,7 @@ export default async function RankingsPage({ params, searchParams }: Props) {
                         sort === m ? chipActiveRank : chipIdle,
                       )}
                     >
-                      {t(`sort_${m}` as "sort_lessons")}
+                      {t(`sort_${m}` as "sort_lessons" | "sort_level")}
                     </Link>
                   ))}
                 </div>
@@ -240,6 +241,12 @@ export default async function RankingsPage({ params, searchParams }: Props) {
                                 </strong>
                               </span>
                               <span>
+                                {t("colLevel")}:{" "}
+                                <strong className="text-[var(--foreground)]">
+                                  {learnerLevelFromXp(m.xpTotal)}
+                                </strong>
+                              </span>
+                              <span>
                                 {t("colXp")}:{" "}
                                 <strong className="text-[var(--foreground)]">
                                   {m.xpTotal}
@@ -293,7 +300,7 @@ export default async function RankingsPage({ params, searchParams }: Props) {
           </Card>
           <p className="text-center text-xs text-[var(--muted)]">
             <Link
-              href="/profile/account#visibility"
+              href="/profile/settings#visibility"
               className="font-medium text-violet-600 hover:underline dark:text-violet-300"
             >
               {tCom("optInCta")}

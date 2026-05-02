@@ -31,6 +31,7 @@ export async function updateCommunityProfile(raw: z.infer<typeof schema>): Promi
       revalidatePath(`${prefix}/settings/community`);
       revalidatePath(`${prefix}/profile`);
       revalidatePath(`${prefix}/profile/account`);
+      revalidatePath(`${prefix}/profile/settings`);
       revalidatePath(`${prefix}/community`);
       revalidatePath(`${prefix}/activities`);
       revalidatePath(`${prefix}/rankings`);

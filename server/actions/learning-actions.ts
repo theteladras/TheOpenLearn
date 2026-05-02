@@ -65,6 +65,7 @@ import {
   skipsCoinEconomy,
 } from "@/lib/coin-economy";
 import { routing } from "@/i18n/routing";
+import { learnerLevelFromXp } from "@/lib/xp-level";
 
 const analyzeSchema = z
   .object({
@@ -1404,11 +1405,14 @@ export async function markTaskComplete(taskId: string): Promise<
       newAchievements: string[];
       coinsEarned: number;
       celebration: "task" | "phase" | "roadmap";
+      /** Present when total XP from this action crossed one or more level thresholds. */
+      levelUp: { from: number; to: number } | null;
     }
   | { ok: false; error: string }
 > {
   try {
     const user = await getOrCreateAppUser();
+    const xpBefore = user.xpTotal;
     const progress = await prisma.userTaskProgress.findUnique({
       where: { userId_taskId: { userId: user.id, taskId } },
       include: {
@@ -1614,6 +1618,17 @@ export async function markTaskComplete(taskId: string): Promise<
       }
     }
 
+    const { xpTotal: xpAfter } = await prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
+      select: { xpTotal: true },
+    });
+    const levelBefore = learnerLevelFromXp(xpBefore);
+    const levelAfter = learnerLevelFromXp(xpAfter);
+    const levelUp =
+      levelAfter > levelBefore ?
+        { from: levelBefore, to: levelAfter }
+      : null;
+
     return {
       ok: true,
       xpGained: xpReward,
@@ -1622,6 +1637,7 @@ export async function markTaskComplete(taskId: string): Promise<
       newAchievements,
       coinsEarned,
       celebration,
+      levelUp,
     };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Could not update task.";

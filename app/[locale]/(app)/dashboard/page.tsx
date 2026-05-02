@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { ArrowRight, BookMarked } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { ArrowRight, BookMarked, Sparkles } from "lucide-react";
+import { TopicClusterMark } from "@/components/learning/topic-cluster-art";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,10 +11,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { TopicClusterMark } from "@/components/learning/topic-cluster-art";
 import { DashboardAnalytics } from "@/features/dashboard/dashboard-analytics";
 import { DashboardHeroPulseCta } from "@/features/dashboard/dashboard-hero-pulse-cta";
+import { DashboardPhaseStrip } from "@/features/dashboard/dashboard-phase-strip";
 import { getOrCreateAppUser } from "@/lib/auth-user";
+import {
+  buildPhaseSteps,
+  buildUpNextItems,
+  featuredProgressPct,
+  getContinueHref,
+  type DashboardRoadmapForWorkspace,
+} from "@/lib/dashboard-workspace-data";
 import { prisma } from "@/lib/db";
 import {
   countPhasesDone,
@@ -23,6 +30,7 @@ import {
 } from "@/lib/journey-stats";
 import { isLessonFinishedWithExam } from "@/lib/lesson-finished";
 import { normalizeClusterKey } from "@/lib/topic-cluster";
+import { learnerLevelFromXp } from "@/lib/xp-level";
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -110,22 +118,183 @@ export default async function DashboardPage({ params }: Props) {
   const featured = roadmaps[0];
   const rest = roadmaps.slice(1);
 
+  const workspaceRoadmap = featured as DashboardRoadmapForWorkspace | null;
+  const phaseSteps = buildPhaseSteps(workspaceRoadmap);
+  const continueHref =
+    workspaceRoadmap ?
+      getContinueHref(workspaceRoadmap)
+    : "/learn/new";
+  const continuePct = featuredProgressPct(workspaceRoadmap);
+  const upNext = buildUpNextItems(workspaceRoadmap, 2);
+
   const clusterLabel = (key: string) => {
     const k = normalizeClusterKey(key);
     return tCluster(k);
   };
 
   return (
-    <div className="space-y-10">
-      <header className="mx-auto max-w-2xl space-y-5 text-center">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            {t("welcome", { name: user.displayName ?? "learner" })}
-          </h1>
-          <p className="mt-2 text-pretty text-[var(--muted)]">
-            {t("subtitle")}
-          </p>
+    <div className="space-y-8">
+      <div className="rounded-2xl border border-[var(--border)]/60 bg-[var(--card)]/25 p-4 backdrop-blur-sm sm:p-5 md:p-6 dark:bg-[var(--card)]/20">
+        <div className="space-y-5">
+          <div>
+            <h1 className="text-lg font-semibold tracking-tight text-[var(--foreground)] sm:text-xl">
+              {t("welcome", { name: user.displayName ?? "learner" })}
+            </h1>
+            <p className="mt-1 max-w-2xl text-pretty text-sm leading-relaxed text-[var(--muted)]">
+              {t("subtitle")}
+            </p>
+          </div>
+
+          {featured ?
+            <>
+              <DashboardPhaseStrip
+                title={t("workspacePathTitle")}
+                phases={phaseSteps}
+              />
+
+              <div className="grid gap-3 md:grid-cols-5 md:gap-4">
+                <div className="space-y-3 md:col-span-3">
+                  <div className="rounded-xl border border-[var(--border)]/70 bg-[var(--accent-soft)]/35 p-3 dark:bg-[var(--accent-soft)]/15 sm:p-4">
+                    <div className="mb-3 flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-[0.65rem] font-semibold uppercase tracking-wide text-[var(--muted)]">
+                          {t("workspaceContinueSection")}
+                        </p>
+                        <p className="mt-0.5 truncate text-sm font-semibold text-[var(--foreground)] sm:text-base">
+                          {featured.title}
+                        </p>
+                        {featured.goal || featured.description ?
+                          <p className="mt-1 line-clamp-2 text-xs text-[var(--muted)]">
+                            {featured.goal ?? featured.description}
+                          </p>
+                        : null}
+                      </div>
+                      <span className="shrink-0 rounded-full bg-[var(--accent)]/15 px-2 py-0.5 text-xs font-semibold tabular-nums text-[var(--accent)]">
+                        {continuePct}%
+                      </span>
+                    </div>
+                    <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-[var(--background)]/80 dark:bg-[var(--foreground)]/10">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-fuchsia-500/90"
+                        style={{ width: `${continuePct}%` }}
+                      />
+                    </div>
+                    <Button
+                      className="w-full rounded-full bg-[var(--accent)] shadow-md shadow-[var(--accent)]/25"
+                      asChild
+                    >
+                      <Link href={continueHref}>{t("continue")}</Link>
+                    </Button>
+                  </div>
+
+                  {rest[0] || rest[1] ?
+                    <div className="space-y-2 rounded-xl border border-[var(--border)]/60 bg-[var(--card)]/40 p-3 dark:bg-[var(--card)]/25">
+                      {[rest[0], rest[1]].filter(Boolean).map((r) => {
+                        const { total, completed } = countRoadmapTasks(r);
+                        const pct = progressPercent(completed, total);
+                        return (
+                          <div key={r.id}>
+                            <div className="mb-1 flex justify-between gap-2 text-xs font-medium text-[var(--foreground)]">
+                              <Link
+                                href={`/roadmap/${r.id}`}
+                                className="min-w-0 truncate hover:underline"
+                              >
+                                {r.title}
+                              </Link>
+                              <span className="shrink-0 tabular-nums text-[var(--muted)]">
+                                {pct}%
+                              </span>
+                            </div>
+                            <div className="h-1 overflow-hidden rounded-full bg-[var(--border)]/80">
+                              <div
+                                className="h-full rounded-full bg-[var(--accent)]/70"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  : null}
+                </div>
+
+                <div className="rounded-xl border border-[var(--border)]/70 bg-[var(--card)]/40 p-3 dark:bg-[var(--card)]/25 md:col-span-2 md:p-4">
+                  <div className="mb-2 flex items-center gap-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-[var(--muted)] sm:text-xs">
+                    <Sparkles className="size-3.5 shrink-0 text-[var(--accent)] sm:size-4" />
+                    {t("workspaceSuggestedNext")}
+                  </div>
+                  {upNext.length > 0 ?
+                    <ul className="space-y-2 text-xs sm:text-sm">
+                      {upNext.map((item, i) => (
+                        <li key={`${item.href}-${i}`}>
+                          <Link
+                            href={item.href}
+                            className="block rounded-lg bg-[var(--accent-soft)]/50 px-2.5 py-2 font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--accent-soft)]/70 dark:bg-[var(--accent-soft)]/20 dark:hover:bg-[var(--accent-soft)]/35"
+                          >
+                            {item.title}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  : <p className="text-xs text-[var(--muted)]">
+                      {t("workspaceNoUpNext")}
+                    </p>}
+                </div>
+              </div>
+            </>
+          : <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--accent-soft)]/20 px-4 py-10 text-center dark:bg-[var(--accent-soft)]/10">
+              <p className="text-sm text-[var(--muted)]">{t("emptyJourneys")}</p>
+              <Button className="mt-4 rounded-full" asChild>
+                <Link href="/learn/new">{t("newRoadmap")}</Link>
+              </Button>
+            </div>}
+
+          <div className="grid grid-cols-2 gap-2 border-t border-[var(--border)]/50 pt-4 sm:grid-cols-4 sm:gap-3 sm:pt-5">
+            <div className="rounded-lg bg-[var(--accent-soft)]/25 px-2 py-2 dark:bg-[var(--accent-soft)]/10 sm:px-3">
+              <p className="text-[0.65rem] font-medium text-[var(--muted)] sm:text-xs">
+                {t("workspaceStatCourses")}
+              </p>
+              <p className="text-sm font-semibold tabular-nums text-[var(--foreground)] sm:text-base">
+                {roadmaps.length}
+              </p>
+            </div>
+            <div className="rounded-lg bg-[var(--accent-soft)]/25 px-2 py-2 dark:bg-[var(--accent-soft)]/10 sm:px-3">
+              <p className="text-[0.65rem] font-medium text-[var(--muted)] sm:text-xs">
+                {t("workspaceStatTasks")}
+              </p>
+              <p className="text-sm font-semibold tabular-nums text-[var(--foreground)] sm:text-base">
+                {totalTasks > 0 ? `${doneTasks}/${totalTasks}` : "0"}
+              </p>
+            </div>
+            <div className="rounded-lg bg-[var(--accent-soft)]/25 px-2 py-2 dark:bg-[var(--accent-soft)]/10 sm:px-3">
+              <p className="text-[0.65rem] font-medium text-[var(--muted)] sm:text-xs">
+                {t("workspaceStatOverall")}
+              </p>
+              <p className="text-sm font-semibold tabular-nums text-[var(--foreground)] sm:text-base">
+                {overallPct}%
+              </p>
+            </div>
+            <div className="rounded-lg bg-[var(--accent-soft)]/25 px-2 py-2 dark:bg-[var(--accent-soft)]/10 sm:px-3">
+              <p className="text-[0.65rem] font-medium text-[var(--muted)] sm:text-xs">
+                {t("workspaceStatLevelXp")}
+              </p>
+              <p className="text-sm font-semibold tabular-nums sm:text-base">
+                <span className="text-[var(--accent)]">
+                  {t("workspaceLevelPrefix", {
+                    level: learnerLevelFromXp(user.xpTotal),
+                  })}
+                </span>
+                <span className="text-[var(--muted)]"> · </span>
+                <span className="text-[var(--foreground)]">
+                  {t("workspaceXpTotal", { xp: user.xpTotal })}
+                </span>
+              </p>
+            </div>
+          </div>
         </div>
+      </div>
+
+      <div className="flex flex-col items-center gap-4 sm:flex-row sm:flex-wrap sm:justify-center">
         <DashboardHeroPulseCta>
           <Button
             asChild
@@ -138,20 +307,19 @@ export default async function DashboardPage({ params }: Props) {
             </Link>
           </Button>
         </DashboardHeroPulseCta>
-        {handbookCount > 0 ? (
-          <p className="text-center">
-            <Link
-              href="/profile/handbooks"
-              className="inline-flex items-center gap-2 rounded-full border border-indigo-500/25 bg-indigo-500/[0.07] px-4 py-2 text-sm font-medium text-indigo-800 transition-colors hover:bg-indigo-500/15 dark:text-indigo-200 dark:hover:bg-indigo-500/20"
-            >
-              <BookMarked className="size-4 shrink-0" aria-hidden />
-              {t("handbooksTeaser", { count: handbookCount })}
-            </Link>
-          </p>
-        ) : null}
-      </header>
+        {handbookCount > 0 ?
+          <Link
+            href="/profile/handbooks"
+            className="inline-flex items-center gap-2 rounded-full border border-indigo-500/25 bg-indigo-500/[0.07] px-4 py-2 text-sm font-medium text-indigo-800 transition-colors hover:bg-indigo-500/15 dark:text-indigo-200 dark:hover:bg-indigo-500/20"
+          >
+            <BookMarked className="size-4 shrink-0" aria-hidden />
+            {t("handbooksTeaser", { count: handbookCount })}
+          </Link>
+        : null}
+      </div>
 
       <DashboardAnalytics
+        mode="categoriesOnly"
         data={{
           overallPct,
           roadmapCount: roadmaps.length,
@@ -165,125 +333,47 @@ export default async function DashboardPage({ params }: Props) {
         }}
       />
 
-      <section className="space-y-6" aria-label={t("journeys")}>
-        <h2 className="text-lg font-semibold">{t("journeys")}</h2>
-        {roadmaps.length === 0 ? (
-          <Card>
-            <CardContent className="py-10 text-center text-[var(--muted)]">
-              {t("emptyJourneys")}
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            {featured ? (
-              <Card className="overflow-hidden border-violet-500/20 bg-gradient-to-br from-violet-500/10 via-transparent to-fuchsia-500/5 ring-1 ring-violet-500/20">
-                <CardHeader className="flex flex-row items-start gap-4 space-y-0">
-                  <TopicClusterMark
-                    clusterKey={
-                      featured.learningIntent?.topicClusterKey ?? "general"
-                    }
-                    featured
-                  />
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <Badge variant="outline" className="mb-1 w-fit text-[10px]">
-                      {t("latestJourney")}
-                    </Badge>
-                    <CardTitle className="text-xl sm:text-2xl">
-                      {featured.title}
-                    </CardTitle>
-                    <CardDescription className="line-clamp-2 text-[var(--muted)]">
-                      {featured.goal ?? featured.description}
-                    </CardDescription>
-                    <p className="text-xs font-medium text-violet-600/90 dark:text-violet-300/90">
-                      {clusterLabel(
-                        featured.learningIntent?.topicClusterKey ?? "general",
-                      )}
-                    </p>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {(() => {
-                    const { total, completed } = countRoadmapTasks(featured);
-                    const pct = progressPercent(completed, total);
-                    return (
-                      <>
-                        <Progress value={pct} className="h-2" />
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div className="min-w-0 space-y-0.5 text-sm text-[var(--muted)]">
-                            <p>
-                              {t("featuredJourneyTasksOnly", {
-                                done: completed,
-                                total,
-                              })}
-                            </p>
-                            {featured.estDurationLabel ? (
-                              <p className="text-xs leading-snug">
-                                {t("featuredJourneyPlanEstimate", {
-                                  estimate: featured.estDurationLabel,
-                                })}
-                              </p>
-                            ) : null}
-                          </div>
-                          <Button asChild className="gap-2">
-                            <Link href={`/roadmap/${featured.id}`}>
-                              {t("continue")}
-                              <ArrowRight className="size-4" />
-                            </Link>
-                          </Button>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </CardContent>
-              </Card>
-            ) : null}
-
-            {rest.length > 0 ? (
-              <>
-                <h3 className="text-sm font-medium text-[var(--muted)]">
-                  {t("allJourneys")}
-                </h3>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {rest.map((r) => {
-                    const { total, completed } = countRoadmapTasks(r);
-                    const pct = progressPercent(completed, total);
-                    const ck = r.learningIntent?.topicClusterKey ?? "general";
-                    return (
-                      <Card key={r.id} className="flex flex-col">
-                        <CardHeader className="flex-row items-start gap-3 space-y-0 pb-2">
-                          <TopicClusterMark clusterKey={ck} />
-                          <div className="min-w-0 flex-1">
-                            <CardTitle className="text-base leading-snug">
-                              {r.title}
-                            </CardTitle>
-                            <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)]">
-                              {clusterLabel(ck)}
-                            </p>
-                            <CardDescription className="mt-1 line-clamp-2 text-xs">
-                              {r.goal ?? r.description}
-                            </CardDescription>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="mt-auto space-y-2">
-                          <Progress value={pct} />
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-xs text-[var(--muted)]">
-                              {completed}/{total}
-                            </p>
-                            <Button variant="secondary" size="sm" asChild>
-                              <Link href={`/roadmap/${r.id}`}>{t("view")}</Link>
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </>
-            ) : null}
-          </>
-        )}
-      </section>
+      {rest.length > 2 ?
+        <section className="space-y-4" aria-label={t("allJourneys")}>
+          <h2 className="text-lg font-semibold">{t("allJourneys")}</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {rest.slice(2).map((r) => {
+              const { total, completed } = countRoadmapTasks(r);
+              const pct = progressPercent(completed, total);
+              const ck = r.learningIntent?.topicClusterKey ?? "general";
+              return (
+                <Card key={r.id} className="flex flex-col">
+                  <CardHeader className="flex-row items-start gap-3 space-y-0 pb-2">
+                    <TopicClusterMark clusterKey={ck} />
+                    <div className="min-w-0 flex-1">
+                      <CardTitle className="text-base leading-snug">
+                        {r.title}
+                      </CardTitle>
+                      <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)]">
+                        {clusterLabel(ck)}
+                      </p>
+                      <CardDescription className="mt-1 line-clamp-2 text-xs">
+                        {r.goal ?? r.description}
+                      </CardDescription>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="mt-auto space-y-2">
+                    <Progress value={pct} />
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs text-[var(--muted)]">
+                        {completed}/{total}
+                      </p>
+                      <Button variant="secondary" size="sm" asChild>
+                        <Link href={`/roadmap/${r.id}`}>{t("view")}</Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+      : null}
     </div>
   );
 }

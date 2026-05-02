@@ -1,7 +1,8 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Trophy, Zap } from "lucide-react";
+import { Award, Sparkles, Trophy, Zap } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 
 export type CelebrationKind = "task" | "phase" | "roadmap";
@@ -14,6 +15,8 @@ type Props = {
   coinsEarned: number;
   title: string;
   subtitle?: string;
+  /** Level range after XP from this celebration (no upper bound). */
+  levelUp?: { from: number; to: number } | null;
 };
 
 export function CelebrationOverlay({
@@ -24,15 +27,17 @@ export function CelebrationOverlay({
   coinsEarned,
   title,
   subtitle,
+  levelUp,
 }: Props) {
+  const t = useTranslations("Task");
+
   useEffect(() => {
     if (!open) return;
-    const t = window.setTimeout(
-      () => onClose(),
-      kind === "roadmap" ? 3200 : 2600,
-    );
-    return () => window.clearTimeout(t);
-  }, [open, onClose, kind]);
+    const extra = levelUp ? 900 : 0;
+    const base = kind === "roadmap" ? 3200 : 2600;
+    const tmr = window.setTimeout(() => onClose(), base + extra);
+    return () => window.clearTimeout(tmr);
+  }, [open, onClose, kind, levelUp]);
 
   const Icon = kind === "roadmap" ? Trophy : kind === "phase" ? Sparkles : Zap;
   const iconClass =
@@ -41,6 +46,9 @@ export function CelebrationOverlay({
       : kind === "phase"
         ? "text-fuchsia-400"
         : "text-[var(--accent)]";
+
+  const particleCount = levelUp ? 22 : 14;
+  const levelSpan = levelUp ? levelUp.to - levelUp.from : 0;
 
   return (
     <AnimatePresence>
@@ -62,7 +70,7 @@ export function CelebrationOverlay({
             transition={{ type: "spring", stiffness: 320, damping: 26 }}
           >
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              {Array.from({ length: 14 }, (_, i) => (
+              {Array.from({ length: particleCount }, (_, i) => (
                 <motion.span
                   key={i}
                   className="absolute h-2 w-2 rounded-full bg-[var(--accent)]"
@@ -100,6 +108,53 @@ export function CelebrationOverlay({
             >
               {title}
             </motion.h2>
+            {levelUp ?
+              <motion.div
+                className="relative mx-auto mt-5 flex max-w-[min(100%,16rem)] flex-col items-center gap-1"
+                initial={{ opacity: 0, scale: 0.92 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.12, type: "spring", stiffness: 280, damping: 22 }}
+              >
+                <div className="relative flex size-[min(100vw-4rem,11rem)] items-center justify-center">
+                  <motion.div
+                    className="absolute inset-0 rounded-full opacity-90"
+                    style={{
+                      background:
+                        "conic-gradient(from 0deg, rgb(139,92,246), rgb(34,211,238), rgb(167,139,250), rgb(139,92,246))",
+                      mask: "radial-gradient(farthest-side, transparent calc(100% - 5px), #fff calc(100% - 4px) 100%)",
+                      WebkitMask:
+                        "radial-gradient(farthest-side, transparent calc(100% - 5px), #fff calc(100% - 4px) 100%)",
+                    }}
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      duration: 8,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
+                  />
+                  <div className="relative flex size-[calc(100%-10px)] flex-col items-center justify-center rounded-full border border-[var(--border)]/60 bg-[var(--card)] shadow-inner">
+                    <Award
+                      className="mb-0.5 size-6 text-violet-500 dark:text-violet-300"
+                      aria-hidden
+                    />
+                    <span
+                      className="max-w-full truncate px-1 text-[clamp(1.65rem,9vmin,3.25rem)] font-bold tabular-nums leading-none tracking-tight text-[var(--foreground)]"
+                      title={String(levelUp.to)}
+                    >
+                      {t("celebrationLevelNumber", { level: levelUp.to })}
+                    </span>
+                    <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-600/90 dark:text-violet-300/90">
+                      {t("celebrationLevelUp")}
+                    </span>
+                  </div>
+                </div>
+                {levelSpan > 1 ?
+                  <p className="text-center text-xs font-medium text-[var(--muted)]">
+                    {t("celebrationLevelsJump", { count: levelSpan })}
+                  </p>
+                : null}
+              </motion.div>
+            : null}
             {subtitle && (
               <p className="relative mt-2 text-sm text-[var(--muted)]">
                 {subtitle}
@@ -125,7 +180,7 @@ export function CelebrationOverlay({
               className="relative mt-8 text-sm text-[var(--muted)] underline-offset-4 hover:text-[var(--foreground)] hover:underline"
               onClick={onClose}
             >
-              Continue
+              {t("celebrationContinue")}
             </button>
           </motion.div>
         </motion.div>

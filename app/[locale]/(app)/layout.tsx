@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
-import { AppHeader } from "@/components/app/app-header";
+import { AppSidebar } from "@/components/app/app-sidebar";
 import { getOrCreateAppUser } from "@/lib/auth-user";
 
 export default async function AppLayout({
@@ -26,20 +26,26 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      <AppHeader
+      <AppSidebar
         plan={user.plan}
         coins={user.coins}
         labels={{
           dashboard: t("title"),
+          newLearning: t("newRoadmap"),
           activities: tAct("navTitle"),
           rankings: tRank("navTitle"),
-          profile: tProfile("navTitle"),
+          achievements: tProfile("navAchievements"),
           menu: t("navMenu"),
           menuTitle: t("navMenuTitle"),
           openWallet: t("openWalletAria"),
+          walletBalance: t("walletBalance"),
         }}
       />
-      <div className="mx-auto max-w-6xl px-4 py-8">{children}</div>
+      <div className="min-h-screen lg:pl-64">
+        <main className="mx-auto w-full max-w-6xl px-4 py-6 md:px-6 md:py-8">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

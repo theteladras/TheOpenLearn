@@ -38,6 +38,9 @@ export function SiteHeaderShell({
   );
 }
 
+const brandLinkFocus =
+  "focus-visible:ring-2 focus-visible:ring-[var(--accent)]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]";
+
 export function SiteBrand({
   href,
   className,
@@ -50,7 +53,7 @@ export function SiteBrand({
       href={href}
       className={cn(
         "group relative flex min-w-0 shrink-0 items-center rounded-xl outline-none",
-        "focus-visible:ring-2 focus-visible:ring-[var(--accent)]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]",
+        brandLinkFocus,
         className,
       )}
     >
@@ -63,6 +66,59 @@ export function SiteBrand({
         draggable={false}
         priority={false}
       />
+    </Link>
+  );
+}
+
+/** Logo + wordmark; link always has `aria-label` for accessibility. */
+export function SiteBrandLockup({
+  href,
+  className,
+  logoClassName,
+  wordmarkClassName,
+  appName = "TheOpenLearn",
+  /** When true, hide the wordmark below `max-[380px]` viewport (e.g. mobile top bar). Sidebar should leave this false. */
+  collapseWordmarkOnNarrowViewport = false,
+}: {
+  href: string;
+  className?: string;
+  logoClassName?: string;
+  wordmarkClassName?: string;
+  appName?: string;
+  collapseWordmarkOnNarrowViewport?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-label={appName}
+      className={cn(
+        "group flex min-w-0 max-w-full items-center gap-2 rounded-xl outline-none sm:gap-2.5",
+        brandLinkFocus,
+        className,
+      )}
+    >
+      <Image
+        src="/logo.png"
+        alt=""
+        width={325}
+        height={253}
+        className={cn(
+          "pointer-events-none h-8 w-auto max-h-8 shrink-0 object-contain object-left select-none filter transition-[filter] duration-300 ease-out group-hover:brightness-110 group-hover:saturate-125 group-focus-visible:brightness-110 group-focus-visible:saturate-125 dark:group-hover:brightness-115 dark:group-hover:saturate-150 dark:group-focus-visible:brightness-115 dark:group-focus-visible:saturate-150",
+          logoClassName,
+        )}
+        draggable={false}
+        priority={false}
+      />
+      <span
+        className={cn(
+          "font-brand min-w-0 flex-1 truncate text-left text-[0.9375rem] font-semibold leading-none tracking-[-0.03em] text-foreground antialiased sm:text-base sm:font-bold sm:tracking-[-0.04em]",
+          "transition-[color,opacity] duration-200 ease-out group-hover:text-accent group-hover:opacity-100",
+          collapseWordmarkOnNarrowViewport && "max-[380px]:hidden",
+          wordmarkClassName,
+        )}
+      >
+        {appName}
+      </span>
     </Link>
   );
 }

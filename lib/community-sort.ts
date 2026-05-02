@@ -1,9 +1,10 @@
 import type { CommunityMemberStats } from "@/lib/community-metrics";
+import { learnerLevelFromXp } from "@/lib/xp-level";
 
 export const SORT_MODES = [
   "lessons",
   "rigor",
-  "xp",
+  "level",
   "breadth",
   "streak",
   "roadmaps",
@@ -12,6 +13,7 @@ export const SORT_MODES = [
 export type SortMode = (typeof SORT_MODES)[number];
 
 export function parseSortMode(raw: string | undefined): SortMode {
+  if (raw === "xp") return "level";
   if (raw && (SORT_MODES as readonly string[]).includes(raw)) {
     return raw as SortMode;
   }
@@ -32,8 +34,13 @@ export function sortMembers(
     case "rigor":
       copy.sort((a, b) => avgRigor(b) - avgRigor(a));
       break;
-    case "xp":
-      copy.sort((a, b) => b.xpTotal - a.xpTotal);
+    case "level":
+      copy.sort((a, b) => {
+        const d =
+          learnerLevelFromXp(b.xpTotal) - learnerLevelFromXp(a.xpTotal);
+        if (d !== 0) return d;
+        return b.xpTotal - a.xpTotal;
+      });
       break;
     case "breadth":
       copy.sort((a, b) => b.topicBreadth - a.topicBreadth);

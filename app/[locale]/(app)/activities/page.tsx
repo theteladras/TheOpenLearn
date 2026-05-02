@@ -354,7 +354,7 @@ export default async function ActivitiesPage({ params, searchParams }: Props) {
           </Card>
           <p className="text-center text-xs text-[var(--muted)]">
             <Link
-              href="/profile/account#visibility"
+              href="/profile/settings#visibility"
               className="font-medium text-violet-600 hover:underline dark:text-violet-300"
             >
               {tCom("optInCta")}

@@ -1,5 +1,4 @@
-import { Geist, Geist_Mono } from "next/font/google";
-import Script from "next/script";
+import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import type { ReactNode } from "react";
 import "./globals.css";
 
@@ -13,17 +12,22 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+/** Display / wordmark — distinct from body Geist for nav branding. */
+const outfit = Outfit({
+  variable: "--font-outfit",
+  subsets: ["latin"],
+  weight: ["600", "700"],
+});
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full`}
+      className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} h-full`}
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col antialiased">
-        <Script id="openlearn-splash-skip" strategy="beforeInteractive">
-          {`try{var k="openlearn-splash-dismissed";if(sessionStorage.getItem(k))document.documentElement.classList.add("splash-skip")}catch(e){}`}
-        </Script>
+        <script src="/openlearn-splash-skip.js" />
         {children}
       </body>
     </html>

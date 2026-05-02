@@ -21,6 +21,7 @@ import {
   getPublicProfileOrNull,
 } from "@/lib/community-data";
 import { getFollowSocialContext } from "@/lib/community-follow";
+import { learnerLevelFromXp } from "@/lib/xp-level";
 
 type Props = { params: Promise<{ locale: string; userId: string }> };
 
@@ -144,6 +145,10 @@ export default async function PublicProfilePage({ params }: Props) {
               label={t("statRigor")}
               value={String(avgRigor)}
               hint={t("statRigorHint")}
+            />
+            <StatBox
+              label={t("statLevel")}
+              value={String(learnerLevelFromXp(profile.xpTotal))}
             />
             <StatBox label={t("statXp")} value={String(profile.xpTotal)} />
             <StatBox

@@ -120,6 +120,7 @@ export function TaskDetail({
     coins: number;
     title: string;
     subtitle?: string;
+    levelUp: { from: number; to: number } | null;
   } | null>(null);
   const [writingsOpen, setWritingsOpen] = useState(false);
   const [writingTab, setWritingTab] = useState<"note" | "comment">("note");
@@ -317,6 +318,7 @@ export function TaskDetail({
         coins: r.coinsEarned,
         title,
         subtitle,
+        levelUp: r.levelUp,
       });
       setCelebrationOpen(true);
       if (r.newAchievements.length) {
@@ -338,6 +340,7 @@ export function TaskDetail({
           coinsEarned={celebration.coins}
           title={celebration.title}
           subtitle={celebration.subtitle}
+          levelUp={celebration.levelUp}
         />
       )}
       <div className="flex flex-wrap items-center justify-between gap-4">

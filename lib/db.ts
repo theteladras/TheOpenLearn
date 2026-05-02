@@ -2,6 +2,12 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { PrismaClient } from "@prisma/client";
 
+if (process.env.NODE_ENV === "development" && !process.env.DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL is not set. Copy .env.example to .env.local, set DATABASE_URL (and Clerk keys), then restart `next dev`. For Postgres locally: `npm run docker:up` then `npm run db:push`.",
+  );
+}
+
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
   /** Changes when `prisma generate` runs (see node_modules/.prisma/client/package.json `name`). */

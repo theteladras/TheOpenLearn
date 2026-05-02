@@ -20,6 +20,7 @@ import {
   Globe2,
   Map,
   Menu,
+  Play,
   Sparkles,
   Trophy,
   UserPlus,
@@ -48,6 +49,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { HeroProductMockup } from "@/features/landing/hero-product-mockup";
 
 const springReveal = {
   type: "spring" as const,
@@ -448,128 +450,117 @@ export function LandingPage() {
         >
           <HeroBackdrop scrollYProgress={scrollYProgress} heroRef={heroRef} />
 
-          <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-4 sm:px-4">
-            <div className="flex min-h-0 flex-1 flex-col justify-center py-5 sm:py-7">
+          <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 sm:px-6">
+            <div className="flex min-h-0 flex-1 flex-col justify-center py-8 sm:py-10">
               <motion.div
-                className="mx-auto max-w-3xl text-center"
+                className="grid w-full items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-12 xl:gap-14"
                 initial="hidden"
                 animate="show"
                 variants={{
                   hidden: {},
                   show: {
-                    transition: { staggerChildren: 0.1, delayChildren: 0.04 },
+                    transition: {
+                      staggerChildren: 0.1,
+                      delayChildren: 0.04,
+                    },
                   },
                 }}
               >
-                <motion.p
-                  variants={{
-                    hidden: { opacity: 0, letterSpacing: "0.35em", y: 12 },
-                    show: {
-                      opacity: 1,
-                      letterSpacing: "0.2em",
-                      y: 0,
-                      transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] },
-                    },
-                  }}
-                  className="mb-4 text-[0.65rem] font-semibold uppercase text-[var(--muted)] dark:text-[var(--foreground)]/65 md:mb-5 md:text-xs"
-                >
-                  {t("hero.kicker")}
-                </motion.p>
-                <div className="text-balance" style={{ perspective: "1200px" }}>
-                  <motion.h1
-                    variants={{
-                      hidden: { opacity: 0, y: 28, rotateX: -8 },
-                      show: {
-                        opacity: 1,
-                        y: 0,
-                        rotateX: 0,
-                        transition: { duration: 0.75, ease: [0.16, 1, 0.3, 1] },
-                      },
-                    }}
-                    className="text-3xl font-semibold leading-[1.1] tracking-tight text-[var(--foreground)] min-[380px]:text-[clamp(1.75rem,4.6vw,2.5rem)] sm:text-4xl md:text-[clamp(2.25rem,4vw,2.85rem)] md:leading-[1.06] lg:text-[3.1rem]"
-                  >
-                    <span className="text-gradient">{t("hero.title")}</span>
-                  </motion.h1>
-                </div>
                 <motion.div
                   variants={{
-                    hidden: { opacity: 0, scaleX: 0 },
+                    hidden: { opacity: 0, y: 24 },
                     show: {
                       opacity: 1,
-                      scaleX: 1,
+                      y: 0,
                       transition: {
-                        delay: 0.35,
-                        duration: 0.85,
+                        duration: 0.72,
                         ease: [0.16, 1, 0.3, 1],
                       },
                     },
                   }}
-                  className="mx-auto mt-6 h-px max-w-[min(100%,320px)] origin-center bg-gradient-to-r from-transparent via-[var(--accent)]/50 to-transparent md:mt-7"
-                />
-                <motion.p
-                  variants={{
-                    hidden: { opacity: 0, y: 28 },
-                    show: {
-                      opacity: 1,
-                      y: 0,
-                      transition: { ...springReveal, delay: 0.28 },
-                    },
-                  }}
-                  className="mx-auto mt-6 max-w-2xl text-pretty border-l-2 border-[var(--accent)]/35 pl-5 text-left text-base leading-snug text-[var(--muted)] dark:text-[var(--foreground)]/75 md:mt-7 md:border-l-0 md:pl-0 md:text-center md:text-lg md:leading-relaxed"
+                  className="flex flex-col text-center lg:max-w-xl lg:text-left xl:max-w-2xl"
                 >
-                  {t("hero.subtitle")}
-                </motion.p>
+                  <h1 className="text-balance text-3xl font-semibold leading-[1.12] tracking-tight text-[var(--foreground)] min-[380px]:text-[clamp(1.85rem,5vw,2.65rem)] sm:text-4xl md:text-[clamp(2.35rem,4.2vw,3rem)] md:leading-[1.08] lg:text-[clamp(2.5rem,3.2vw,3.25rem)]">
+                    <span className="text-[var(--foreground)]">
+                      {t("hero.titleLead")}
+                    </span>
+                    <span className="text-gradient">
+                      {t("hero.titleAccent")}
+                    </span>
+                    <span className="text-[var(--foreground)]">
+                      {t("hero.titleTrail")}
+                    </span>
+                  </h1>
+                  <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-[var(--muted)] dark:text-[var(--foreground)]/75 lg:mx-0 lg:mt-6 lg:text-lg">
+                    {t("hero.subtitle")}
+                  </p>
+                  <div className="mt-7 flex w-full max-w-md flex-col items-stretch gap-3 min-[480px]:max-w-none min-[480px]:flex-row min-[480px]:flex-wrap min-[480px]:justify-center lg:mx-0 lg:mt-8 lg:max-w-none lg:justify-start">
+                    <motion.div
+                      className="w-full min-[480px]:w-auto"
+                      whileHover={reduce ? undefined : { scale: 1.03, y: -2 }}
+                      whileTap={reduce ? undefined : { scale: 0.98 }}
+                    >
+                      <Button
+                        size="lg"
+                        className="w-full rounded-full bg-gradient-to-r from-[#6d4df3] to-[#8b5cf6] shadow-lg shadow-[var(--accent)]/30 hover:opacity-[0.96] min-[480px]:w-auto"
+                        asChild
+                      >
+                        <Link href="/sign-up">{t("hero.cta")}</Link>
+                      </Button>
+                    </motion.div>
+                    <motion.div
+                      className="w-full min-[480px]:w-auto"
+                      whileHover={reduce ? undefined : { scale: 1.02, y: -2 }}
+                      whileTap={reduce ? undefined : { scale: 0.98 }}
+                    >
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="w-full rounded-full border-[var(--border)] bg-[var(--card)]/40 backdrop-blur-sm min-[480px]:w-auto dark:bg-[var(--card)]/25"
+                        asChild
+                      >
+                        <a
+                          href="#how"
+                          className="inline-flex items-center justify-center gap-2"
+                        >
+                          <Play className="size-4 shrink-0 opacity-90" />
+                          {t("hero.secondary")}
+                        </a>
+                      </Button>
+                    </motion.div>
+                  </div>
+                  <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-[var(--muted)] lg:justify-start">
+                    <span className="flex items-center justify-center gap-2 lg:justify-start">
+                      <Map className="size-4 shrink-0 text-[var(--accent)]" />
+                      {t("hero.highlight1")}
+                    </span>
+                    <span className="flex items-center justify-center gap-2 lg:justify-start">
+                      <Brain className="size-4 shrink-0 text-[var(--accent)]" />
+                      {t("hero.highlight2")}
+                    </span>
+                    <span className="flex items-center justify-center gap-2 lg:justify-start">
+                      <Trophy className="size-4 shrink-0 text-[var(--accent)]" />
+                      {t("hero.highlight3")}
+                    </span>
+                  </div>
+                </motion.div>
                 <motion.div
                   variants={{
                     hidden: { opacity: 0, y: 32 },
                     show: {
                       opacity: 1,
                       y: 0,
-                      transition: { ...springReveal, delay: 0.42 },
+                      transition: {
+                        duration: 0.78,
+                        ease: [0.16, 1, 0.3, 1],
+                        delay: 0.06,
+                      },
                     },
                   }}
-                  className="mt-6 flex w-full max-w-md flex-col items-stretch gap-2.5 min-[480px]:max-w-none min-[480px]:flex-row min-[480px]:flex-wrap min-[480px]:items-center min-[480px]:justify-center min-[480px]:gap-3 sm:mt-8"
+                  className="relative mx-auto w-full max-w-lg lg:mx-0 lg:max-w-none"
                 >
-                  <motion.div
-                    className="w-full min-[480px]:w-auto"
-                    whileHover={reduce ? undefined : { scale: 1.04, y: -3 }}
-                    whileTap={reduce ? undefined : { scale: 0.97 }}
-                  >
-                    <Button
-                      size="lg"
-                      className="w-full shadow-lg shadow-[var(--accent)]/25 min-[480px]:w-auto"
-                      asChild
-                    >
-                      <Link href="/sign-up">{t("hero.cta")}</Link>
-                    </Button>
-                  </motion.div>
-                  <motion.div
-                    className="w-full min-[480px]:w-auto"
-                    whileHover={reduce ? undefined : { scale: 1.02, y: -2 }}
-                    whileTap={reduce ? undefined : { scale: 0.98 }}
-                  >
-                    <Button
-                      size="lg"
-                      variant="secondary"
-                      className="w-full min-[480px]:w-auto"
-                      asChild
-                    >
-                      <a href="#how">{t("hero.secondary")}</a>
-                    </Button>
-                  </motion.div>
+                  <HeroProductMockup />
                 </motion.div>
-                <motion.p
-                  variants={{
-                    hidden: { opacity: 0 },
-                    show: {
-                      opacity: 1,
-                      transition: { delay: 0.55, duration: 0.6 },
-                    },
-                  }}
-                  className="mx-auto mt-5 max-w-xl text-pretty text-sm leading-snug text-[var(--muted)] dark:text-[var(--foreground)]/70 md:mt-6 md:leading-relaxed"
-                >
-                  {t("hero.coinTeaser")}
-                </motion.p>
               </motion.div>
             </div>
 
